@@ -11,9 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 
 const mockAuditLogs = [
-  { id: "1", user: "admin@farukaktas.edu", action: "Create", module: "Students", status: "success", details: "Created student record" },
-  { id: "2", user: "asani@farukaktas.edu", action: "Update", module: "Attendance", status: "success", details: "Updated attendance" },
-  { id: "3", user: "musa@farukaktas.edu", action: "Create", module: "Payments", status: "success", details: "Recorded payment" },
+  { id: "1", user: "admin@alnamaa.edu", action: "Create", module: "Students", status: "success", details: "Created student record" },
+  { id: "2", user: "asani@alnamaa.edu", action: "Update", module: "Attendance", status: "success", details: "Updated attendance" },
+  { id: "3", user: "musa@alnamaa.edu", action: "Create", module: "Payments", status: "success", details: "Recorded payment" },
 ]
 
 export default function AuditLogsPage() {

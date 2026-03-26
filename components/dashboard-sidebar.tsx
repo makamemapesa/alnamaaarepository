@@ -279,7 +279,7 @@ export function DashboardSidebar() {
                 </Avatar>
                 {!collapsed && (
                   <div className="flex-1 text-left">
-                    <p className="text-xs font-medium leading-tight">Ibrahim Farukaktas</p>
+                    <p className="text-xs font-medium leading-tight">Ibrahim Alnamaa</p>
                     <p className="text-[10px] text-sidebar-foreground/60">Super Admin</p>
                   </div>
                 )}

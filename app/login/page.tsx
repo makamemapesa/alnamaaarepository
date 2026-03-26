@@ -35,7 +35,7 @@ export default function LoginPage() {
             </div>
             <div>
               <h1 className="text-xl font-bold" style={{ fontFamily: "var(--font-heading)" }}>FISS</h1>
-              <p className="text-xs text-primary-foreground/70">Farukaktas Integrated School System</p>
+              <p className="text-xs text-primary-foreground/70">Alnamaa International Academy</p>
             </div>
           </div>
 
@@ -65,7 +65,7 @@ export default function LoginPage() {
           </div>
 
           <p className="text-xs text-primary-foreground/40">
-            Farukaktas Integrated School System. All rights reserved.
+            Alnamaa International Academy. All rights reserved.
           </p>
         </div>
 
@@ -84,7 +84,7 @@ export default function LoginPage() {
             </div>
             <div>
               <h1 className="text-lg font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>FISS</h1>
-              <p className="text-xs text-muted-foreground">Farukaktas Integrated School System</p>
+              <p className="text-xs text-muted-foreground">Alnamaa International Academy</p>
             </div>
           </div>
 
@@ -126,7 +126,7 @@ export default function LoginPage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="admin@farukaktas.edu"
+                  placeholder="admin@alnamaa.edu"
                   className="pl-10 bg-card"
                   required
                 />
@@ -177,7 +177,7 @@ export default function LoginPage() {
           <div className="mt-8 rounded-lg border border-border bg-secondary/50 p-4">
             <p className="text-xs font-medium text-muted-foreground mb-2">Demo Credentials</p>
             <div className="flex flex-col gap-1 text-xs text-muted-foreground">
-              <span>Email: admin@farukaktas.edu</span>
+              <span>Email: admin@alnamaa.edu</span>
               <span>Password: demo123</span>
               <span>Role: Super Administrator</span>
             </div>

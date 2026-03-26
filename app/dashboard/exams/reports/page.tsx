@@ -8,13 +8,13 @@ import {Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/comp
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { classes, students } from "@/lib/mock-data"
+import { classes, recentStudents as students } from "@/lib/mock-data"
 
 export default function ReportCardsPage() {
   const [selectedClass, setSelectedClass] = useState("")
   const [selectedTerm, setSelectedTerm] = useState("term2")
 
-  const filteredStudents = selectedClass ? students.filter((s) => s.classId === selectedClass) : students
+  const filteredStudents = selectedClass ? students.filter((s) => s.class === selectedClass) : students
 
   return (
     <>
@@ -58,8 +58,8 @@ export default function ReportCardsPage() {
                   {filteredStudents.slice(0, 10).map((student) => (
                     <TableRow key={student.id}>
                       <TableCell className="font-medium">{student.name}</TableCell>
-                      <TableCell>{student.regNumber}</TableCell>
-                      <TableCell>{student.classId}</TableCell>
+                      <TableCell>{student.regNo}</TableCell>
+                      <TableCell>{student.class}</TableCell>
                       <TableCell>{(Math.random() * 40 + 60).toFixed(1)}%</TableCell>
                       <TableCell>
                         <Badge variant="default">Complete</Badge>

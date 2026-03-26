@@ -9,7 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { exams, students, classes } from "@/lib/mock-data"
+import { examResults as exams, recentStudents as students, classes } from "@/lib/mock-data"
 
 export default function ResultsPage() {
   const [searchQuery, setSearchQuery] = useState("")

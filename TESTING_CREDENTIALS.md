@@ -16,7 +16,7 @@ Network:  http://192.168.56.1:3000
 
 ### Demo Login Account (Available on Login Page)
 ```
-Email:    admin@farukaktas.edu
+Email:    admin@alnamaa.edu
 Password: demo123
 Role:     Super Administrator
 ```
@@ -25,20 +25,20 @@ Role:     Super Administrator
 You can login as any of these roles (same password: `demo123`):
 
 1. **Super Administrator** ⭐
-   - Email: `admin@farukaktas.edu`
+   - Email: `admin@alnamaa.edu`
    - Full system access
 
 2. **School Administrator**
-   - Email: `hauwa@farukaktas.edu`
+   - Email: `hauwa@alnamaa.edu`
    - School management access
 
 3. **Teacher**
-   - Email: `asani@farukaktas.edu` (Dr. Abubakar Sani)
-   - Email: `neze@farukaktas.edu` (Mrs. Ngozi Eze)
+   - Email: `asani@alnamaa.edu` (Dr. Abubakar Sani)
+   - Email: `neze@alnamaa.edu` (Mrs. Ngozi Eze)
    - Teaching and class management
 
 4. **Accountant / Bursar**
-   - Email: `musa@farukaktas.edu` (Musa Abdullahi)
+   - Email: `musa@alnamaa.edu` (Musa Abdullahi)
    - Financial management access
 
 5. **Parent / Guardian**
@@ -340,7 +340,7 @@ Test on these breakpoints:
 
 ## 🎯 User Personas for Testing
 
-### 1. Super Administrator (Ibrahim Farukaktas)
+### 1. Super Administrator (Ibrahim Alnamaa)
 **Goal:** Oversee entire school operations
 **Test:** All modules, user management, system settings
 
@@ -365,10 +365,10 @@ Test on these breakpoints:
 ## 📞 Support Information
 
 ### School Details
-- **Name:** Farukaktas Integrated School System (FISS)
+- **Name:** Alnamaa International Academy (AIA)
 - **Location:** 123 Education Lane, Kaduna, Nigeria
 - **Phone:** +234 801 234 5678
-- **Email:** info@farukaktas.edu
+- **Email:** info@alnamaa.edu
 - **Academic Session:** 2025/2026 (Term 2)
 
 ### System Information

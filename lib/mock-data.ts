@@ -2,7 +2,7 @@
 
 export const currentUser = {
   id: "USR001",
-  name: "Ibrahim Farukaktas",
+  name: "Ibrahim Alnamaa",
   email: "admin@farukaktas.edu",
   role: "super_admin" as const,
   avatar: "/images/avatar-admin.jpg",
@@ -73,12 +73,12 @@ export const feeStructure = [
 ]
 
 export const examResults = [
-  { studentName: "Amina Hassan", class: "JSS 3A", math: 85, english: 78, science: 92, social: 88, total: 343, average: 85.75, grade: "A", position: 1 },
-  { studentName: "David Adamu", class: "SS 3A", math: 92, english: 88, science: 95, social: 85, total: 360, average: 90, grade: "A+", position: 1 },
-  { studentName: "Emmanuel Obi", class: "SS 2B", math: 72, english: 65, science: 78, social: 70, total: 285, average: 71.25, grade: "B", position: 5 },
-  { studentName: "Fatima Yusuf", class: "JSS 1C", math: 60, english: 55, science: 68, social: 62, total: 245, average: 61.25, grade: "C", position: 12 },
-  { studentName: "Grace Nwosu", class: "JSS 2B", math: 78, english: 82, science: 75, social: 80, total: 315, average: 78.75, grade: "B+", position: 3 },
-  { studentName: "Mohammed Ali", class: "SS 1A", math: 88, english: 90, science: 85, social: 92, total: 355, average: 88.75, grade: "A", position: 2 },
+  { id: "EXM001", studentName: "Amina Hassan", class: "JSS 3A", math: 85, english: 78, science: 92, social: 88, total: 343, average: 85.75, grade: "A", position: 1 },
+  { id: "EXM002", studentName: "David Adamu", class: "SS 3A", math: 92, english: 88, science: 95, social: 85, total: 360, average: 90, grade: "A+", position: 1 },
+  { id: "EXM003", studentName: "Emmanuel Obi", class: "SS 2B", math: 72, english: 65, science: 78, social: 70, total: 285, average: 71.25, grade: "B", position: 5 },
+  { id: "EXM004", studentName: "Fatima Yusuf", class: "JSS 1C", math: 60, english: 55, science: 68, social: 62, total: 245, average: 61.25, grade: "C", position: 12 },
+  { id: "EXM005", studentName: "Grace Nwosu", class: "JSS 2B", math: 78, english: 82, science: 75, social: 80, total: 315, average: 78.75, grade: "B+", position: 3 },
+  { id: "EXM006", studentName: "Mohammed Ali", class: "SS 1A", math: 88, english: 90, science: 85, social: 92, total: 355, average: 88.75, grade: "A", position: 2 },
 ]
 
 export const notifications = [

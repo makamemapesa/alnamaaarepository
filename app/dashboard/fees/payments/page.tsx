@@ -9,15 +9,14 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { payments, students, classes } from "@/lib/mock-data"
+import { recentPayments as payments, recentStudents as students, classes } from "@/lib/mock-data"
 
 export default function PaymentsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
 
   const filteredPayments = payments.filter((payment) => {
-    const student = students.find((s) => s.id === payment.studentId)
-    const matchesSearch = !searchQuery || student?.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesSearch = !searchQuery || payment.studentName.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesStatus = statusFilter === "all" || payment.status === statusFilter
     return matchesSearch && matchesStatus
   })
@@ -64,15 +63,14 @@ export default function PaymentsPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredPayments.slice(0, 10).map((payment) => {
-                    const student = students.find((s) => s.id === payment.studentId)
                     return (
                       <TableRow key={payment.id}>
-                        <TableCell className="font-medium">{student?.name}</TableCell>
-                        <TableCell>{payment.amount.toLocaleString()}</TableCell>
+                        <TableCell className="font-medium">{payment.studentName}</TableCell>
+                        <TableCell>₦{payment.amount.toLocaleString()}</TableCell>
                         <TableCell>{new Date(payment.date).toLocaleDateString()}</TableCell>
                         <TableCell>{payment.method}</TableCell>
                         <TableCell>
-                          <Badge variant={payment.status === "completed" ? "default" : "destructive"}>
+                          <Badge variant={payment.status === "confirmed" ? "default" : "destructive"}>
                             {payment.status}
                           </Badge>
                         </TableCell>

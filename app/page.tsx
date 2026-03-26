@@ -30,7 +30,7 @@ export default function HomePage() {
             </div>
             <div className="hidden sm:block">
               <span className="text-sm font-bold text-foreground" style={{ fontFamily: "var(--font-heading)" }}>
-                Farukaktas School
+                Alnamaa International Academy
               </span>
             </div>
           </Link>
@@ -81,7 +81,7 @@ export default function HomePage() {
               <span className="text-accent">Excellence</span>
             </h1>
             <p className="mt-6 text-lg leading-relaxed text-primary-foreground/80 max-w-2xl mx-auto text-pretty">
-              Farukaktas School provides world-class education with modern facilities, experienced teachers, and a nurturing environment that inspires every child to achieve their full potential.
+              Alnamaa International Academy provides world-class education with modern facilities, experienced teachers, and a nurturing environment that inspires every child to achieve their full potential.
             </p>
             <div className="mt-8 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <Button size="lg" className="bg-accent text-accent-foreground hover:bg-accent/90">
@@ -124,7 +124,7 @@ export default function HomePage() {
           <div className="mx-auto max-w-2xl text-center mb-16">
             <Badge variant="secondary" className="mb-4">About Our School</Badge>
             <h2 className="text-3xl font-bold text-foreground lg:text-4xl text-balance" style={{ fontFamily: "var(--font-heading)" }}>
-              Why Choose Farukaktas School
+              Why Choose Alnamaa International Academy
             </h2>
             <p className="mt-4 text-muted-foreground leading-relaxed text-pretty">
               We combine academic excellence with character development, preparing students for success in a rapidly changing world.
@@ -263,7 +263,7 @@ export default function HomePage() {
             {[
               {
                 category: "Achievement",
-                title: "Farukaktas School Wins Inter-School Science Competition",
+                title: "Alnamaa International Academy Wins Inter-School Science Competition",
                 excerpt: "Our students showcased exceptional talent at the regional science fair, bringing home the gold trophy in both junior and senior categories.",
                 date: "Feb 20, 2026",
               },
@@ -322,7 +322,7 @@ export default function HomePage() {
                 {[
                   { icon: MapPin, label: "Address", value: "123 Education Lane, Kaduna, Nigeria" },
                   { icon: Phone, label: "Phone", value: "+234 801 234 5678" },
-                  { icon: Mail, label: "Email", value: "info@farukaktas.edu" },
+                  { icon: Mail, label: "Email", value: "info@alnamaa.edu" },
                   { icon: Clock, label: "Office Hours", value: "Mon - Fri: 8:00 AM - 4:00 PM" },
                 ].map((contact) => (
                   <div key={contact.label} className="flex items-start gap-4">
@@ -374,7 +374,7 @@ export default function HomePage() {
                 <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent text-accent-foreground font-bold text-sm">
                   F
                 </div>
-                <span className="text-sm font-bold text-primary-foreground">Farukaktas School</span>
+                <span className="text-sm font-bold text-primary-foreground">Alnamaa International Academy</span>
               </div>
               <p className="text-xs text-primary-foreground/60 leading-relaxed">
                 Building future leaders through excellence in education, character, and innovation since 2011.
@@ -408,14 +408,14 @@ export default function HomePage() {
               <div className="flex flex-col gap-2 text-xs text-primary-foreground/60">
                 <span>123 Education Lane, Kaduna</span>
                 <span>+234 801 234 5678</span>
-                <span>info@farukaktas.edu</span>
+                <span>info@alnamaa.edu</span>
               </div>
             </div>
           </div>
 
           <div className="mt-10 border-t border-primary-foreground/10 pt-6 text-center">
             <p className="text-xs text-primary-foreground/40">
-              2026 Farukaktas Integrated School System (FISS). All rights reserved.
+              2026 Alnamaa International Academy (AIA). All rights reserved.
             </p>
           </div>
         </div>

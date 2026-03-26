@@ -15,9 +15,9 @@ const spaceGrotesk = Space_Grotesk({
 })
 
 export const metadata: Metadata = {
-  title: 'FISS - Farukaktas Integrated School System',
-  description: 'A secure, scalable, and user-friendly School Management System for Farukaktas School. Manage student records, academic performance, examinations, and fee payments.',
-  keywords: ['school management', 'student records', 'academic performance', 'FISS', 'Farukaktas'],
+  title: 'AIA - Alnamaa International Academy',
+  description: 'A secure, scalable, and user-friendly School Management System for Alnamaa International Academy. Manage student records, academic performance, examinations, and fee payments.',
+  keywords: ['school management', 'student records', 'academic performance', 'AIA', 'Alnamaa'],
 }
 
 export const viewport: Viewport = {

@@ -10,22 +10,24 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { students, classes } from "@/lib/mock-data"
+import { recentStudents as students, classes } from "@/lib/mock-data"
 
 export default function OutstandingFeesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [priorityFilter, setPriorityFilter] = useState("all")
 
-  const outstandingFees = students.filter((_, idx) => idx % 3 === 0).map((student, idx) => ({
-    id: `outstanding_${idx}`,
-    studentId: student.id,
-    studentName: student.name,
-    regNumber: student.regNumber,
-    classId: student.classId,
-    amount: Math.floor(Math.random() * 80000) + 20000,
-    daysPending: Math.floor(Math.random() * 180) + 10,
-    priority: idx % 3 === 0 ? "high" : idx % 2 === 0 ? "medium" : "low",
-  }))
+  const outstandingFees = students
+    .filter((student) => student.feeStatus !== "paid")
+    .map((student, idx) => ({
+      id: `outstanding_${student.id}`,
+      studentId: student.id,
+      studentName: student.name,
+      regNumber: student.regNo,
+      classId: student.class,
+      amount: student.feeStatus === "partial" ? Math.floor(Math.random() * 50000) + 20000 : Math.floor(Math.random() * 100000) + 50000,
+      daysPending: Math.floor(Math.random() * 180) + 10,
+      priority: student.feeStatus === "unpaid" ? "high" : "medium",
+    }))
 
   const filteredFees = outstandingFees.filter((fee) => {
     const matchesSearch = !searchQuery || fee.studentName.toLowerCase().includes(searchQuery.toLowerCase())

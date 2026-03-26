@@ -8,17 +8,20 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { classes, feeStructures } from "@/lib/mock-data"
+import { classes, feeStructure as feeStructures } from "@/lib/mock-data"
 
 export default function FeeStructurePage() {
-  const [selectedLevel, setSelectedLevel] = useState("jss1")
+  const [selectedLevel, setSelectedLevel] = useState("all")
 
   const filteredStructures = feeStructures.filter((fee) => {
-    if (!selectedLevel) return true
-    return fee.level === selectedLevel
+    if (selectedLevel === "all") return true
+    if (selectedLevel === "jss") return fee.class.startsWith("JSS")
+    if (selectedLevel === "sss") return fee.class.startsWith("SS")
+    return true
   })
 
-  const totalAmount = filteredStructures.reduce((sum, fee) => sum + fee.amount, 0)
+  const totalAmount = feeStructures.reduce((sum, fee) => sum + fee.total, 0)
+  const averageFee = totalAmount / feeStructures.length || 0
 
   return (
     <>
@@ -29,10 +32,10 @@ export default function FeeStructurePage() {
       <div className="p-6 flex flex-col gap-6">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {[
-            { label: "Total Levels", value: classes.length },
+            { label: "Total Classes", value: classes.length },
             { label: "Fee Levels", value: feeStructures.length },
-            { label: "Average Fee", value: `${(totalAmount / filteredStructures.length || 0).toFixed(0)}` },
-            { label: "Total Annual", value: `${totalAmount.toLocaleString()}` },
+            { label: "Average Fee", value: `₦${averageFee.toLocaleString()}` },
+            { label: "Total Structure", value: `₦${totalAmount.toLocaleString()}` },
           ].map((item, idx) => (
             <Card key={idx}>
               <CardContent className="p-4">
@@ -44,30 +47,30 @@ export default function FeeStructurePage() {
         </div>
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Fee Structure</CardTitle>
+            <CardTitle className="text-base">Fee Details</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Level</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Amount ()</TableHead>
-                    <TableHead>Term</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Class</TableHead>
+                    <TableHead>Tuition</TableHead>
+                    <TableHead>Boarding</TableHead>
+                    <TableHead>Development</TableHead>
+                    <TableHead>Books</TableHead>
+                    <TableHead className="text-right">Total</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredStructures.map((fee) => (
-                    <TableRow key={fee.id}>
-                      <TableCell className="font-medium">{fee.level.toUpperCase()}</TableCell>
-                      <TableCell>{fee.description}</TableCell>
-                      <TableCell>{fee.amount.toLocaleString()}</TableCell>
-                      <TableCell>{fee.term}</TableCell>
-                      <TableCell>
-                        <Badge variant="default">Active</Badge>
-                      </TableCell>
+                    <TableRow key={fee.class}>
+                      <TableCell className="font-medium">{fee.class}</TableCell>
+                      <TableCell>₦{fee.tuition.toLocaleString()}</TableCell>
+                      <TableCell>₦{fee.boarding.toLocaleString()}</TableCell>
+                      <TableCell>₦{fee.development.toLocaleString()}</TableCell>
+                      <TableCell>₦{fee.books.toLocaleString()}</TableCell>
+                      <TableCell className="text-right font-bold">₦{fee.total.toLocaleString()}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>

@@ -35,14 +35,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { exams, students, subjects, classes } from "@/lib/mock-data"
+import { examResults, recentStudents as students, subjects, classes } from "@/lib/mock-data"
 
 export default function MarksEntryPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedClass, setSelectedClass] = useState("")
   const [selectedSubject, setSelectedSubject] = useState("")
 
-  const filteredMarks = exams.filter((exam) => {
+  const filteredMarks = examResults.filter((exam) => {
     const matchesClass = !selectedClass || exam.classId === selectedClass
     const matchesSubject = !selectedSubject || exam.subjectId === selectedSubject
     return matchesClass && matchesSubject
@@ -58,7 +58,7 @@ export default function MarksEntryPage() {
       <div className="p-6 flex flex-col gap-6">
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           {[
-            { label: "Total Exams", value: exams.length, color: "bg-primary/10 text-primary" },
+            { label: "Total Exams", value: examResults.length, color: "bg-primary/10 text-primary" },
             { label: "Classes", value: classes.length, color: "bg-accent/10 text-accent" },
             { label: "Subjects", value: subjects.length, color: "bg-chart-3/10 text-chart-3" },
             { label: "Students", value: students.length, color: "bg-chart-4/10 text-chart-4" },
