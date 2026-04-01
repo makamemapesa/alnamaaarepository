@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { api, getResults } from "@/lib/api-client"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,15 +20,19 @@ import { Textarea } from "@/components/ui/textarea"
 import { ArrowLeft, Upload, Save, Heart } from "lucide-react"
 import Link from "next/link"
 import { Checkbox } from "@/components/ui/checkbox"
-import { donors } from "@/lib/mock-data"
-
-const activeDonors = donors.filter((d) => d.status === "active")
 
 export default function RegisterStudentPage() {
   const router = useRouter()
   const [step, setStep] = useState(1)
   const [hasDonor, setHasDonor] = useState(false)
   const [selectedDonor, setSelectedDonor] = useState("")
+  const [donorsData, setDonorsData] = useState<any[]>([])
+
+  const activeDonors = donorsData.filter((d: any) => d.status === "active")
+
+  useEffect(() => {
+    api.get("/api/donors/").then(r => setDonorsData(getResults(r.data))).catch(() => {})
+  }, [])
   const [donorNumber, setDonorNumber] = useState("")
   const [isOrphan, setIsOrphan] = useState(false)
 
@@ -332,8 +337,8 @@ export default function RegisterStudentPage() {
                           <SelectValue placeholder="Choose a donor from the list" />
                         </SelectTrigger>
                         <SelectContent>
-                          {activeDonors.map((d) => (
-                            <SelectItem key={d.id} value={d.id}>
+                          {activeDonors.map((d: any) => (
+                            <SelectItem key={d.id} value={String(d.id)}>
                               <span className="font-medium">{d.name}</span>
                               <span className="ml-2 text-xs text-muted-foreground">({d.type})</span>
                             </SelectItem>
@@ -341,7 +346,7 @@ export default function RegisterStudentPage() {
                         </SelectContent>
                       </Select>
                       {selectedDonor && (() => {
-                        const d = activeDonors.find((x) => x.id === selectedDonor)
+                        const d = activeDonors.find((x: any) => String(x.id) === selectedDonor)
                         return d ? (
                           <p className="text-xs text-muted-foreground">
                             Contact: {d.contact} &bull; {d.phone}

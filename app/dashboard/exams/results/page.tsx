@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { api, getResults } from "@/lib/api-client"
 import { Search, Download, TrendingUp, Award, Users, BarChart2 } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { Button } from "@/components/ui/button"
@@ -14,22 +15,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
 import { Progress } from "@/components/ui/progress"
-import { examResults, classesExtended } from "@/lib/mock-data"
 
-const extendedResults = [
-  { id: "R001", studentName: "Amina Hassan",     regNo: "FISS/2024/001", class: "JSS 3A", math: 85, english: 78, science: 92, social: 88, total: 343, average: 85.75, grade: "A",  position: 1, status: "passed" as const },
-  { id: "R002", studentName: "David Adamu",       regNo: "FISS/2024/004", class: "SS 3A",  math: 92, english: 88, science: 95, social: 85, total: 360, average: 90.00, grade: "A+", position: 1, status: "passed" as const },
-  { id: "R003", studentName: "Emmanuel Obi",      regNo: "FISS/2024/002", class: "SS 2B",  math: 72, english: 65, science: 78, social: 70, total: 285, average: 71.25, grade: "B",  position: 5, status: "passed" as const },
-  { id: "R004", studentName: "Fatima Yusuf",      regNo: "FISS/2024/003", class: "JSS 1A", math: 60, english: 55, science: 68, social: 62, total: 245, average: 61.25, grade: "C",  position: 12, status: "passed" as const },
-  { id: "R005", studentName: "Grace Nwosu",       regNo: "FISS/2024/005", class: "JSS 2B", math: 78, english: 82, science: 75, social: 80, total: 315, average: 78.75, grade: "B+", position: 3, status: "passed" as const },
-  { id: "R006", studentName: "Mohammed Ali",      regNo: "FISS/2024/006", class: "SS 1A",  math: 88, english: 90, science: 85, social: 92, total: 355, average: 88.75, grade: "A",  position: 2, status: "passed" as const },
-  { id: "R007", studentName: "Sarah Johnson",     regNo: "FISS/2024/007", class: "JSS 3A", math: 55, english: 58, science: 50, social: 52, total: 215, average: 53.75, grade: "D",  position: 18, status: "passed" as const },
-  { id: "R008", studentName: "Peter Okoro",       regNo: "FISS/2024/008", class: "SS 2A",  math: 88, english: 76, science: 91, social: 84, total: 339, average: 84.75, grade: "A",  position: 2, status: "passed" as const },
-  { id: "R009", studentName: "Khadija Bello",     regNo: "FISS/2024/009", class: "JSS 1A", math: 74, english: 80, science: 69, social: 72, total: 295, average: 73.75, grade: "B",  position: 6, status: "passed" as const },
-  { id: "R010", studentName: "Chukwuemeka Ike",   regNo: "FISS/2024/010", class: "SS 1B",  math: 42, english: 38, science: 50, social: 45, total: 175, average: 43.75, grade: "F",  position: 28, status: "failed" as const },
-  { id: "R011", studentName: "Aisha Garba",       regNo: "FISS/2024/011", class: "JSS 2A", math: 96, english: 92, science: 90, social: 94, total: 372, average: 93.00, grade: "A+", position: 1, status: "passed" as const },
-  { id: "R012", studentName: "Tunde Fashola",     regNo: "FISS/2024/012", class: "SS 3B",  math: 79, english: 82, science: 77, social: 80, total: 318, average: 79.50, grade: "B+", position: 4, status: "passed" as const },
-]
 
 const gradeColor = (grade: string) => {
   if (grade.startsWith("A")) return "text-accent font-semibold"
@@ -40,24 +26,29 @@ const gradeColor = (grade: string) => {
 }
 
 export default function ResultsPage() {
+  const [extendedResults, setExtendedResults] = useState<any[]>([])
   const [search, setSearch] = useState("")
   const [classFilter, setClassFilter] = useState("all")
   const [gradeFilter, setGradeFilter] = useState("all")
+
+  useEffect(() => {
+    api.get("/api/exam-results/").then(r => setExtendedResults(getResults(r.data))).catch(() => {})
+  }, [])
 
   const filtered = extendedResults.filter((r) => {
     const q = search.toLowerCase()
     return (
       (r.studentName.toLowerCase().includes(q) || r.regNo.toLowerCase().includes(q)) &&
-      (classFilter === "all" || r.class === classFilter) &&
-      (gradeFilter === "all" || r.grade.startsWith(gradeFilter))
+      (classFilter === "all" || (r.className || r.class) === classFilter) &&
+      (gradeFilter === "all" || (r.grade || "").startsWith(gradeFilter))
     )
   })
 
   const passed = extendedResults.filter((r) => r.status === "passed").length
   const failed = extendedResults.filter((r) => r.status === "failed").length
-  const passRate = Math.round((passed / extendedResults.length) * 100)
-  const overallAvg = (extendedResults.reduce((s, r) => s + r.average, 0) / extendedResults.length).toFixed(1)
-  const uniqueClasses = Array.from(new Set(extendedResults.map((r) => r.class))).sort()
+  const passRate = extendedResults.length > 0 ? Math.round((passed / extendedResults.length) * 100) : 0
+  const overallAvg = extendedResults.length > 0 ? (extendedResults.reduce((s, r) => s + (r.average ?? 0), 0) / extendedResults.length).toFixed(1) : "0.0"
+  const uniqueClasses = Array.from(new Set(extendedResults.map((r) => r.className || r.class).filter(Boolean))).sort() as string[]
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -153,7 +144,7 @@ export default function ResultsPage() {
                       <p className="text-xs font-mono text-muted-foreground">{r.regNo}</p>
                     </div>
                   </TableCell>
-                  <TableCell><Badge variant="outline">{r.class}</Badge></TableCell>
+                  <TableCell><Badge variant="outline">{r.className || r.class}</Badge></TableCell>
                   <TableCell className="hidden md:table-cell">{r.math}</TableCell>
                   <TableCell className="hidden md:table-cell">{r.english}</TableCell>
                   <TableCell className="hidden md:table-cell">{r.science}</TableCell>

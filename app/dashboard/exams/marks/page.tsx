@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { api, getResults } from "@/lib/api-client"
 import { Save, CheckCircle2, ClipboardList, Users, BookOpen } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { Button } from "@/components/ui/button"
@@ -13,86 +14,12 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
-import { classesExtended, subjects, recentStudents } from "@/lib/mock-data"
-
-const allStudents = [
-  // JSS 1A
-  { id: "STU003", name: "Fatima Yusuf",        regNo: "FISS/2024/003", class: "JSS 1A" },
-  { id: "STU009", name: "Khadija Bello",        regNo: "FISS/2024/009", class: "JSS 1A" },
-  { id: "STU015", name: "Yusuf Bello",          regNo: "FISS/2024/015", class: "JSS 1A" },
-  { id: "STU016", name: "Zainab Musa",          regNo: "FISS/2024/016", class: "JSS 1A" },
-  { id: "STU017", name: "Umar Ibrahim",         regNo: "FISS/2024/017", class: "JSS 1A" },
-  // JSS 1B
-  { id: "STU018", name: "Hafsa Ahmed",          regNo: "FISS/2024/018", class: "JSS 1B" },
-  { id: "STU019", name: "Sulaiman Kano",        regNo: "FISS/2024/019", class: "JSS 1B" },
-  { id: "STU020", name: "Rebecca Afolabi",      regNo: "FISS/2024/020", class: "JSS 1B" },
-  { id: "STU021", name: "Joseph Eze",           regNo: "FISS/2024/021", class: "JSS 1B" },
-  { id: "STU022", name: "Maryam Lawal",         regNo: "FISS/2024/022", class: "JSS 1B" },
-  // JSS 2A
-  { id: "STU011", name: "Aisha Garba",          regNo: "FISS/2024/011", class: "JSS 2A" },
-  { id: "STU023", name: "Abdullahi Danladi",    regNo: "FISS/2024/023", class: "JSS 2A" },
-  { id: "STU024", name: "Chisom Obi",           regNo: "FISS/2024/024", class: "JSS 2A" },
-  { id: "STU025", name: "Taiwo Adeleke",        regNo: "FISS/2024/025", class: "JSS 2A" },
-  { id: "STU026", name: "Nkechi Achebe",        regNo: "FISS/2024/026", class: "JSS 2A" },
-  // JSS 2B
-  { id: "STU027", name: "Hanan Mohammed",       regNo: "FISS/2024/027", class: "JSS 2B" },
-  { id: "STU028", name: "Segun Adeyemi",        regNo: "FISS/2024/028", class: "JSS 2B" },
-  { id: "STU029", name: "Gloria Nwachukwu",     regNo: "FISS/2024/029", class: "JSS 2B" },
-  { id: "STU030", name: "Ismail Hassan",        regNo: "FISS/2024/030", class: "JSS 2B" },
-  { id: "STU031", name: "Patience Okafor",      regNo: "FISS/2024/031", class: "JSS 2B" },
-  // JSS 3A
-  { id: "STU001", name: "Amina Hassan",         regNo: "FISS/2024/001", class: "JSS 3A" },
-  { id: "STU007", name: "Sarah Johnson",        regNo: "FISS/2024/007", class: "JSS 3A" },
-  { id: "STU014", name: "Ngozi Peters",         regNo: "FISS/2024/014", class: "JSS 3A" },
-  { id: "STU032", name: "Bilal Usman",          regNo: "FISS/2024/032", class: "JSS 3A" },
-  { id: "STU033", name: "Esther Olawale",       regNo: "FISS/2024/033", class: "JSS 3A" },
-  // JSS 3B
-  { id: "STU034", name: "Bashir Yakubu",        regNo: "FISS/2024/034", class: "JSS 3B" },
-  { id: "STU035", name: "Adaeze Nwosu",         regNo: "FISS/2024/035", class: "JSS 3B" },
-  { id: "STU036", name: "Kayode Abiodun",       regNo: "FISS/2024/036", class: "JSS 3B" },
-  { id: "STU037", name: "Rukkayat Shehu",       regNo: "FISS/2024/037", class: "JSS 3B" },
-  { id: "STU038", name: "Emeka Chukwu",         regNo: "FISS/2024/038", class: "JSS 3B" },
-  // SS 1A
-  { id: "STU006", name: "Mohammed Ali",         regNo: "FISS/2024/006", class: "SS 1A" },
-  { id: "STU013", name: "Chidi Okonkwo",        regNo: "FISS/2024/013", class: "SS 1A" },
-  { id: "STU039", name: "Fatimah Bello",        regNo: "FISS/2024/039", class: "SS 1A" },
-  { id: "STU040", name: "Lukman Adeniyi",       regNo: "FISS/2024/040", class: "SS 1A" },
-  { id: "STU041", name: "Naomi Idowu",          regNo: "FISS/2024/041", class: "SS 1A" },
-  // SS 1B
-  { id: "STU042", name: "Salihu Garba",         regNo: "FISS/2024/042", class: "SS 1B" },
-  { id: "STU043", name: "Blessing Ochi",        regNo: "FISS/2024/043", class: "SS 1B" },
-  { id: "STU044", name: "Ibrahima Toure",       regNo: "FISS/2024/044", class: "SS 1B" },
-  { id: "STU045", name: "Chiamaka Okonjo",      regNo: "FISS/2024/045", class: "SS 1B" },
-  { id: "STU046", name: "David Musa",           regNo: "FISS/2024/046", class: "SS 1B" },
-  // SS 2A
-  { id: "STU008", name: "Peter Okoro",          regNo: "FISS/2024/008", class: "SS 2A" },
-  { id: "STU047", name: "Asmau Shehu",          regNo: "FISS/2024/047", class: "SS 2A" },
-  { id: "STU048", name: "Felix Egwu",           regNo: "FISS/2024/048", class: "SS 2A" },
-  { id: "STU049", name: "Hadija Yaro",          regNo: "FISS/2024/049", class: "SS 2A" },
-  { id: "STU050", name: "Kenneth Eze",          regNo: "FISS/2024/050", class: "SS 2A" },
-  // SS 2B
-  { id: "STU002", name: "Emmanuel Obi",         regNo: "FISS/2024/002", class: "SS 2B" },
-  { id: "STU051", name: "Mariam Karimi",        regNo: "FISS/2024/051", class: "SS 2B" },
-  { id: "STU052", name: "Solomon Asante",       regNo: "FISS/2024/052", class: "SS 2B" },
-  { id: "STU053", name: "Faridah Nuhu",         regNo: "FISS/2024/053", class: "SS 2B" },
-  { id: "STU054", name: "Babatunde Coker",      regNo: "FISS/2024/054", class: "SS 2B" },
-  // SS 3A
-  { id: "STU055", name: "Zakariyya Bello",      regNo: "FISS/2024/055", class: "SS 3A" },
-  { id: "STU056", name: "Chinwe Obi",           regNo: "FISS/2024/056", class: "SS 3A" },
-  { id: "STU057", name: "Taofeeq Salami",       regNo: "FISS/2024/057", class: "SS 3A" },
-  { id: "STU058", name: "Habiba Idris",         regNo: "FISS/2024/058", class: "SS 3A" },
-  { id: "STU059", name: "Osaro Ighile",         regNo: "FISS/2024/059", class: "SS 3A" },
-  // SS 3B
-  { id: "STU012", name: "Tunde Fashola",        regNo: "FISS/2024/012", class: "SS 3B" },
-  { id: "STU060", name: "Halima Goni",          regNo: "FISS/2024/060", class: "SS 3B" },
-  { id: "STU061", name: "Charles Obi",          regNo: "FISS/2024/061", class: "SS 3B" },
-  { id: "STU062", name: "Aminata Diallo",       regNo: "FISS/2024/062", class: "SS 3B" },
-  { id: "STU063", name: "Stephen Nweke",        regNo: "FISS/2024/063", class: "SS 3B" },
-]
-
 type Marks = Record<string, string>
 
 export default function MarksEntryPage() {
+  const [classes, setClasses] = useState<any[]>([])
+  const [subjectsList, setSubjectsList] = useState<any[]>([])
+  const [allStudents, setAllStudents] = useState<any[]>([])
   const [selectedClass, setSelectedClass] = useState("")
   const [selectedSubject, setSelectedSubject] = useState("")
   const [selectedTerm, setSelectedTerm] = useState("Term 2, 2025/2026")
@@ -100,11 +27,21 @@ export default function MarksEntryPage() {
   const [marks, setMarks] = useState<Marks>({})
   const [saved, setSaved] = useState(false)
 
-  const classStudents = allStudents.filter((s) => s.class === selectedClass)
-  const selectedClassData = classesExtended.find((c) => c.name === selectedClass)
+  useEffect(() => {
+    api.get("/api/classes/").then(r => setClasses(getResults(r.data))).catch(() => {})
+    api.get("/api/subjects/").then(r => setSubjectsList(getResults(r.data))).catch(() => {})
+    api.get("/api/students/?page_size=500").then(r => setAllStudents(getResults(r.data))).catch(() => {})
+  }, [])
+
+  const classStudents = allStudents.filter((s) => (s.className || s.class) === selectedClass).map((s) => ({
+    id: String(s.id),
+    name: [s.firstName, s.lastName].filter(Boolean).join(" ") || s.name,
+    regNo: s.regNo,
+  }))
+  const selectedClassData = classes.find((c) => c.name === selectedClass)
   const activeSubjects = selectedClassData
-    ? subjects.filter((s) => s.status === "active" && selectedClassData.subjects.includes(s.name))
-    : subjects.filter((s) => s.status === "active")
+    ? subjectsList.filter((s) => s.status === "active" && (selectedClassData.subjectNames || selectedClassData.subjects || []).includes(s.name))
+    : subjectsList.filter((s) => s.status === "active")
   const terms = ["Term 1, 2025/2026", "Term 2, 2025/2026", "Term 3, 2025/2026"]
   const examTypes = ["CA 1", "CA 2", "Mid-Term", "End of Term"]
 
@@ -116,7 +53,22 @@ export default function MarksEntryPage() {
     }
   }
 
-  const handleSave = () => setSaved(true)
+  const handleSave = () => {
+    const payload = {
+      marks: classStudents
+        .filter((s) => marks[s.id] !== undefined && marks[s.id] !== "")
+        .map((s) => ({
+          student: s.id,
+          subject: selectedSubject,
+          student_class: selectedClass,
+          term: selectedTerm,
+          exam_type: selectedExam,
+          score: parseInt(marks[s.id]),
+        }))
+    }
+    api.post("/api/exam-marks/bulk_save/", payload).catch(() => {})
+    setSaved(true)
+  }
 
   const filledCount = classStudents.filter((s) => marks[s.id] !== undefined && marks[s.id] !== "").length
   const avgMark = classStudents.length > 0
@@ -164,7 +116,7 @@ export default function MarksEntryPage() {
               <span className="text-sm font-medium">Class</span>
               <Select value={selectedClass} onValueChange={(v) => { setSelectedClass(v); setSelectedSubject(""); setMarks({}) }}>
                 <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
-                <SelectContent>{classesExtended.map((c) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}</SelectContent>
+                <SelectContent>{classes.map((c) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="flex flex-col gap-1.5">

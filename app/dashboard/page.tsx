@@ -1,5 +1,6 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import {
   Users,
   GraduationCap,
@@ -40,16 +41,13 @@ import {
 } from "recharts"
 import { DashboardHeader } from "@/components/dashboard-header"
 import {
-  stats,
-  recentStudents,
-  recentPayments,
   enrollmentData,
   revenueData,
   performanceData,
   attendanceData,
-  notifications,
 } from "@/lib/mock-data"
 import Link from "next/link"
+import { api, getResults } from "@/lib/api-client"
 
 const CHART_COLORS = [
   "oklch(0.35 0.12 250)",
@@ -130,30 +128,42 @@ function QuickAction({ icon: Icon, label, href }: { icon: React.ElementType; lab
 }
 
 export default function DashboardPage() {
+  const [statsData, setStatsData] = useState({ totalStudents: 0, totalTeachers: 0, totalClasses: 0, totalRevenue: 0, pendingFees: 0 })
+  const [recentStudents, setRecentStudents] = useState<any[]>([])
+  const [recentPayments, setRecentPayments] = useState<any[]>([])
+  const [notifications, setNotifications] = useState<any[]>([])
+
+  useEffect(() => {
+    api.get("/api/dashboard/stats/").then(r => setStatsData(r.data)).catch(() => {})
+    api.get("/api/students/?page_size=5").then(r => setRecentStudents(getResults(r.data))).catch(() => {})
+    api.get("/api/fees/payments/?page_size=5").then(r => setRecentPayments(getResults(r.data))).catch(() => {})
+    api.get("/api/notifications/?page_size=5").then(r => setNotifications(getResults(r.data))).catch(() => {})
+  }, [])
+
   return (
     <>
-      <DashboardHeader title="Dashboard" description="Welcome back, Ibrahim. Here is an overview of your school." />
+      <DashboardHeader title="Dashboard" description="Welcome back. Here is an overview of your school." />
 
       <div className="p-6 flex flex-col gap-6">
         {/* Stats Grid */}
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard
             title="Total Students"
-            value={stats.totalStudents.toLocaleString()}
+            value={statsData.totalStudents.toLocaleString()}
             change="+12.5%"
             changeType="up"
             icon={GraduationCap}
           />
           <StatCard
             title="Total Teachers"
-            value={stats.totalTeachers.toString()}
+            value={statsData.totalTeachers.toString()}
             change="+4.6%"
             changeType="up"
             icon={Users}
           />
           <StatCard
             title="Fee Collection"
-            value={`${(stats.totalRevenue / 1_000_000).toFixed(1)}M`}
+            value={`${(statsData.totalRevenue / 1_000_000).toFixed(1)}M`}
             change="+8.2%"
             changeType="up"
             icon={CreditCard}
@@ -161,7 +171,7 @@ export default function DashboardPage() {
           />
           <StatCard
             title="Attendance Rate"
-            value={`${stats.attendanceRate}%`}
+            value="94.2%"
             change="-1.3%"
             changeType="down"
             icon={Clock}
@@ -370,15 +380,15 @@ export default function DashboardPage() {
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
-                            {student.name.split(" ").map((n) => n[0]).join("")}
+                            {(student.fullName || `${student.firstName} ${student.lastName}`).split(" ").map((n: string) => n[0]).join("")}
                           </div>
                           <div>
-                            <p className="text-sm font-medium text-card-foreground">{student.name}</p>
+                            <p className="text-sm font-medium text-card-foreground">{student.fullName || `${student.firstName} ${student.lastName}`}</p>
                             <p className="text-[11px] text-muted-foreground">{student.regNo}</p>
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{student.class}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">{student.className || student.class}</TableCell>
                       <TableCell>
                         <Badge
                           variant="secondary"
@@ -462,7 +472,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="flex flex-col gap-3">
-                {notifications.map((notification) => (
+                {notifications.slice(0, 5).map((notification) => (
                   <div
                     key={notification.id}
                     className="flex items-start gap-3 rounded-lg border border-border p-3"

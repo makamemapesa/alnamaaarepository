@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { api, getResults } from "@/lib/api-client"
 import {
   Search, AlertTriangle, Send, CheckCircle2, Clock, DollarSign, TrendingDown,
 } from "lucide-react"
@@ -20,18 +21,7 @@ import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog"
 
-const fmt = (n: number) => `₦${n.toLocaleString()}`
-
-const outstanding = [
-  { id: 1, studentName: "Emmanuel Obi",   regNo: "FISS/2024/002", class: "SS 2B",  totalFee: 205000, amountPaid: 100000, lastPayment: "2026-02-24", daysOverdue: 34 },
-  { id: 2, studentName: "Sarah Johnson",  regNo: "FISS/2024/007", class: "JSS 3A", totalFee: 172000, amountPaid: 75000,  lastPayment: "2026-02-21", daysOverdue: 37 },
-  { id: 3, studentName: "Grace Nwosu",    regNo: "FISS/2024/005", class: "JSS 2B", totalFee: 160000, amountPaid: 50000,  lastPayment: "2026-02-17", daysOverdue: 41 },
-  { id: 4, studentName: "Bola Tinubu",    regNo: "FISS/2024/013", class: "SS 1B",  totalFee: 195000, amountPaid: 0,      lastPayment: "—",          daysOverdue: 58 },
-  { id: 5, studentName: "Chioma Eze",     regNo: "FISS/2024/014", class: "JSS 1B", totalFee: 155000, amountPaid: 30000,  lastPayment: "2026-01-30", daysOverdue: 59 },
-  { id: 6, studentName: "Samuel Dankwa",  regNo: "FISS/2024/015", class: "SS 3A",  totalFee: 223000, amountPaid: 100000, lastPayment: "2026-01-25", daysOverdue: 64 },
-  { id: 7, studentName: "Halima Musa",    regNo: "FISS/2024/016", class: "JSS 2A", totalFee: 160000, amountPaid: 80000,  lastPayment: "2026-01-20", daysOverdue: 69 },
-  { id: 8, studentName: "Emeka Okafor",   regNo: "FISS/2024/017", class: "SS 2A",  totalFee: 205000, amountPaid: 0,      lastPayment: "—",          daysOverdue: 88 },
-]
+const fmt = (n: number) => `₦${(n ?? 0).toLocaleString()}`
 
 function overdueSeverity(days: number) {
   if (days >= 60) return { label: "Critical", class: "bg-destructive/10 text-destructive border-destructive/30" }
@@ -40,23 +30,28 @@ function overdueSeverity(days: number) {
 }
 
 export default function OutstandingPage() {
+  const [outstanding, setOutstanding] = useState<any[]>([])
   const [search, setSearch] = useState("")
   const [classFilter, setClassFilter] = useState("all")
-  const [reminded, setReminded] = useState<number[]>([])
-  const [reminderTarget, setReminderTarget] = useState<typeof outstanding[0] | null>(null)
+  const [reminded, setReminded] = useState<(number | string)[]>([])
+  const [reminderTarget, setReminderTarget] = useState<any>(null)
+
+  useEffect(() => {
+    api.get("/api/fees/outstanding/").then(r => setOutstanding(getResults(r.data))).catch(() => {})
+  }, [])
 
   const filtered = outstanding.filter((s) => {
     const q = search.toLowerCase()
     return (
       (s.studentName.toLowerCase().includes(q) || s.regNo.toLowerCase().includes(q)) &&
-      (classFilter === "all" || s.class.startsWith(classFilter))
+      (classFilter === "all" || (s.className || s.class || "").startsWith(classFilter))
     )
   })
 
   const totalOwed    = outstanding.reduce((s, r) => s + (r.totalFee - r.amountPaid), 0)
   const totalStudents = outstanding.length
   const critical      = outstanding.filter((s) => s.daysOverdue >= 60).length
-  const avgCollection = Math.round(outstanding.reduce((s, r) => s + (r.amountPaid / r.totalFee) * 100, 0) / outstanding.length)
+  const avgCollection = outstanding.length > 0 ? Math.round(outstanding.reduce((s, r) => s + ((r.amountPaid ?? 0) / (r.totalFee || 1)) * 100, 0) / outstanding.length) : 0
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -87,7 +82,7 @@ export default function OutstandingPage() {
               <CardTitle>Outstanding Balances</CardTitle>
               <CardDescription>Students with unpaid or partially paid fees</CardDescription>
             </div>
-            <Button size="sm" variant="outline" className="gap-1" onClick={() => setReminded(outstanding.map((s) => s.id))}>
+            <Button size="sm" variant="outline" className="gap-1" onClick={() => setReminded(outstanding.map((s: any) => s.id))}>
               <Send className="h-4 w-4" />Send All Reminders
             </Button>
           </div>
@@ -133,7 +128,7 @@ export default function OutstandingPage() {
                         <p className="text-xs font-mono text-muted-foreground">{s.regNo}</p>
                       </div>
                     </TableCell>
-                    <TableCell className="hidden sm:table-cell"><Badge variant="outline">{s.class}</Badge></TableCell>
+                    <TableCell className="hidden sm:table-cell"><Badge variant="outline">{s.className || s.class}</Badge></TableCell>
                     <TableCell className="font-semibold text-destructive">{fmt(balance)}</TableCell>
                     <TableCell className="hidden md:table-cell">
                       <div className="flex items-center gap-2 min-w-[100px]">

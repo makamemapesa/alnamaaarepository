@@ -1,9 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   Search, Plus, Download, CheckCircle2, Clock, CreditCard, Banknote, Smartphone, DollarSign,
 } from "lucide-react"
+import { api, getResults } from "@/lib/api-client"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -19,22 +20,8 @@ import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { recentPayments } from "@/lib/mock-data"
 
 const fmt = (n: number) => `₦${n.toLocaleString()}`
-
-const allPayments = [
-  { id: "PAY001", studentName: "Amina Hassan",     regNo: "FISS/2024/001", class: "JSS 3A", amount: 172000, date: "2026-02-25", method: "Bank Transfer",  status: "confirmed" as const, term: "Term 2, 2025/2026", receiptNo: "RCP-001", category: "Full Payment" },
-  { id: "PAY002", studentName: "David Adamu",       regNo: "FISS/2024/004", class: "SS 3A",  amount: 223000, date: "2026-02-24", method: "Cash",           status: "confirmed" as const, term: "Term 2, 2025/2026", receiptNo: "RCP-002", category: "Full Payment" },
-  { id: "PAY003", studentName: "Emmanuel Obi",      regNo: "FISS/2024/002", class: "SS 2B",  amount: 100000, date: "2026-02-24", method: "Mobile Money",   status: "pending"   as const, term: "Term 2, 2025/2026", receiptNo: "RCP-003", category: "Tuition" },
-  { id: "PAY004", studentName: "Mohammed Ali",      regNo: "FISS/2024/006", class: "SS 1A",  amount: 195000, date: "2026-02-23", method: "Bank Transfer",  status: "confirmed" as const, term: "Term 2, 2025/2026", receiptNo: "RCP-004", category: "Full Payment" },
-  { id: "PAY005", studentName: "Peter Okoro",       regNo: "FISS/2024/008", class: "SS 2A",  amount: 205000, date: "2026-02-22", method: "Bank Transfer",  status: "confirmed" as const, term: "Term 2, 2025/2026", receiptNo: "RCP-005", category: "Full Payment" },
-  { id: "PAY006", studentName: "Sarah Johnson",     regNo: "FISS/2024/007", class: "JSS 3A", amount: 75000,  date: "2026-02-21", method: "Cash",           status: "pending"   as const, term: "Term 2, 2025/2026", receiptNo: "RCP-006", category: "Tuition" },
-  { id: "PAY007", studentName: "Khadija Bello",     regNo: "FISS/2024/009", class: "JSS 1A", amount: 155000, date: "2026-02-20", method: "Bank Transfer",  status: "confirmed" as const, term: "Term 2, 2025/2026", receiptNo: "RCP-007", category: "Full Payment" },
-  { id: "PAY008", studentName: "Aisha Garba",       regNo: "FISS/2024/011", class: "JSS 2A", amount: 160000, date: "2026-02-19", method: "Mobile Money",   status: "confirmed" as const, term: "Term 2, 2025/2026", receiptNo: "RCP-008", category: "Boarding" },
-  { id: "PAY009", studentName: "Tunde Fashola",     regNo: "FISS/2024/012", class: "SS 3B",  amount: 223000, date: "2026-02-18", method: "Bank Transfer",  status: "confirmed" as const, term: "Term 2, 2025/2026", receiptNo: "RCP-009", category: "Full Payment" },
-  { id: "PAY010", studentName: "Grace Nwosu",       regNo: "FISS/2024/005", class: "JSS 2B", amount: 50000,  date: "2026-02-17", method: "Cash",           status: "pending"   as const, term: "Term 2, 2025/2026", receiptNo: "RCP-010", category: "Development Levy" },
-]
 
 const methodIcon = (method: string) => {
   if (method === "Bank Transfer") return <CreditCard className="h-4 w-4 text-blue-500" />
@@ -43,12 +30,16 @@ const methodIcon = (method: string) => {
 }
 
 export default function PaymentsPage() {
-  const [payments, setPayments] = useState(allPayments)
+  const [payments, setPayments] = useState<any[]>([])
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [methodFilter, setMethodFilter] = useState("all")
   const [open, setOpen] = useState(false)
   const [form, setForm] = useState({ studentName: "", regNo: "", class: "", amount: "", method: "Bank Transfer", term: "Term 2, 2025/2026", receiptNo: "", category: "Full Payment" })
+
+  useEffect(() => {
+    api.get("/api/fees/payments/").then(r => setPayments(getResults(r.data))).catch(() => {})
+  }, [])
 
   const filtered = payments.filter((p) => {
     const q = search.toLowerCase()
@@ -164,7 +155,7 @@ export default function PaymentsPage() {
                       <p className="text-xs font-mono text-muted-foreground">{p.regNo}</p>
                     </div>
                   </TableCell>
-                  <TableCell className="hidden sm:table-cell"><Badge variant="outline">{p.class}</Badge></TableCell>
+                  <TableCell className="hidden sm:table-cell"><Badge variant="outline">{p.className || p.class}</Badge></TableCell>
                   <TableCell className="font-semibold text-primary">{fmt(p.amount)}</TableCell>
                   <TableCell className="hidden md:table-cell font-mono text-xs text-muted-foreground">{p.receiptNo}</TableCell>
                   <TableCell className="hidden sm:table-cell">

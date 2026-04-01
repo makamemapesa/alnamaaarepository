@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import {
   Search,
@@ -42,16 +42,25 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { recentStudents } from "@/lib/mock-data"
+import { api, getResults } from "@/lib/api-client"
 
 export default function StudentsPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [classFilter, setClassFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
+  const [students, setStudents] = useState<any[]>(recentStudents as any[])
+  const [loading, setLoading] = useState(true)
 
-  const filteredStudents = recentStudents.filter((student) => {
-    const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      student.regNo.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesClass = classFilter === "all" || student.class === classFilter
+  useEffect(() => {
+    api.get("/api/students/").then(r => setStudents(getResults(r.data))).catch(() => {}).finally(() => setLoading(false))
+  }, [])
+
+  const filteredStudents = students.filter((student) => {
+    const name = student.fullName || student.name || `${student.firstName} ${student.lastName}`
+    const cls = student.className || student.class || ""
+    const matchesSearch = name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (student.regNo || "").toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesClass = classFilter === "all" || cls === classFilter
     const matchesStatus = statusFilter === "all" || student.status === statusFilter
     return matchesSearch && matchesClass && matchesStatus
   })
@@ -156,23 +165,26 @@ export default function StudentsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredStudents.map((student) => (
+                  {filteredStudents.map((student) => {
+                    const displayName = student.fullName || student.name || `${student.firstName} ${student.lastName}`
+                    const displayClass = student.className || student.class || ""
+                    return (
                     <TableRow key={student.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-9 w-9">
                             <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
-                              {student.name.split(" ").map((n) => n[0]).join("")}
+                              {displayName.split(" ").map((n: string) => n[0]).join("")}
                             </AvatarFallback>
                           </Avatar>
-                          <span className="text-sm font-medium text-card-foreground">{student.name}</span>
+                          <span className="text-sm font-medium text-card-foreground">{displayName}</span>
                         </div>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground font-mono text-xs">
                         {student.regNo}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary" className="text-[11px]">{student.class}</Badge>
+                        <Badge variant="secondary" className="text-[11px]">{displayClass}</Badge>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
                         <Badge
@@ -226,7 +238,8 @@ export default function StudentsPage() {
                         </DropdownMenu>
                       </TableCell>
                     </TableRow>
-                  ))}
+                    )
+                  })}
                 </TableBody>
               </Table>
             </div>
@@ -234,7 +247,7 @@ export default function StudentsPage() {
             {/* Pagination */}
             <div className="flex items-center justify-between mt-4">
               <p className="text-xs text-muted-foreground">
-                Showing {filteredStudents.length} of {recentStudents.length} students
+                Showing {filteredStudents.length} of {students.length} students
               </p>
               <div className="flex items-center gap-1">
                 <Button variant="outline" size="sm" disabled className="text-xs">Previous</Button>

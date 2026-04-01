@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { api, getResults } from "@/lib/api-client"
 import {
   Search, Plus, Edit, Trash2, UserCheck, BookOpen, Users, Building2, CheckCircle2,
 } from "lucide-react"
@@ -20,62 +21,64 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { teachersExtended, classesExtended, subjects } from "@/lib/mock-data"
-
-const initialAssignments = classesExtended.flatMap((cls) =>
-  cls.subjects.slice(0, 4).map((subj, i) => {
-    const teacher = teachersExtended.find((t) => t.subjects.includes(subj)) || teachersExtended[i % teachersExtended.length]
-    return {
-      id: `ASN-${cls.id}-${i}`,
-      class: cls.name,
-      subject: subj,
-      teacher: teacher.name,
-      teacherId: teacher.id,
-      department: teacher.department,
-      status: "active" as const,
-    }
-  })
-)
 
 export default function AssignmentsPage() {
-  const [assignments, setAssignments] = useState(initialAssignments)
+  const [assignments, setAssignments] = useState<any[]>([])
+  const [classes, setClasses] = useState<any[]>([])
+  const [subjects, setSubjects] = useState<any[]>([])
+  const [teachersExtended, setTeachersExtended] = useState<any[]>([])
   const [search, setSearch] = useState("")
   const [deptFilter, setDeptFilter] = useState("all")
   const [open, setOpen] = useState(false)
-  const [editTarget, setEditTarget] = useState<typeof assignments[0] | null>(null)
+  const [editTarget, setEditTarget] = useState<any>(null)
   const [form, setForm] = useState({ class: "", subject: "", teacherId: "" })
 
-  const departments = Array.from(new Set(teachersExtended.map((t) => t.department)))
+  useEffect(() => {
+    api.get("/api/teacher-assignments/").then(r => setAssignments(getResults(r.data))).catch(() => {})
+    api.get("/api/classes/").then(r => setClasses(getResults(r.data))).catch(() => {})
+    api.get("/api/subjects/").then(r => setSubjects(getResults(r.data))).catch(() => {})
+    api.get("/api/teachers/").then(r => setTeachersExtended(getResults(r.data))).catch(() => {})
+  }, [])
+
+  const departments = Array.from(new Set(teachersExtended.map((t) => t.department).filter(Boolean)))
 
   const filtered = assignments.filter((a) => {
     const q = search.toLowerCase()
+    const teacherName = a.teacherName || a.teacher || ""
+    const subjectName = a.subjectName || a.subject || ""
+    const className = a.className || a.class || ""
     return (
-      (a.teacher.toLowerCase().includes(q) || a.subject.toLowerCase().includes(q) || a.class.toLowerCase().includes(q)) &&
+      (teacherName.toLowerCase().includes(q) || subjectName.toLowerCase().includes(q) || className.toLowerCase().includes(q)) &&
       (deptFilter === "all" || a.department === deptFilter)
     )
   })
 
   const openAdd = () => { setEditTarget(null); setForm({ class: "", subject: "", teacherId: "" }); setOpen(true) }
-  const openEdit = (a: typeof assignments[0]) => {
+  const openEdit = (a: any) => {
     setEditTarget(a)
-    setForm({ class: a.class, subject: a.subject, teacherId: a.teacherId })
+    setForm({ class: a.className || a.class, subject: a.subjectName || a.subject, teacherId: String(a.teacherId || a.teacher?.id || "") })
     setOpen(true)
   }
   const handleSave = () => {
-    const teacher = teachersExtended.find((t) => t.id === form.teacherId)!
+    const teacher = teachersExtended.find((t) => String(t.id) === form.teacherId)
+    const payload = { student_class: form.class, subject: form.subject, teacher: form.teacherId }
     if (editTarget) {
-      setAssignments((prev) => prev.map((a) => a.id === editTarget.id
-        ? { ...a, class: form.class, subject: form.subject, teacher: teacher.name, teacherId: teacher.id, department: teacher.department }
-        : a))
+      api.patch(`/api/teacher-assignments/${editTarget.id}/`, payload)
+        .then(r => setAssignments((prev) => prev.map((a) => a.id === editTarget.id
+          ? { ...a, ...r.data, teacherName: teacher?.name, className: form.class, subjectName: form.subject }
+          : a)))
+        .catch(() => {})
     } else {
-      setAssignments((prev) => [...prev, {
-        id: `ASN-${Date.now()}`, class: form.class, subject: form.subject,
-        teacher: teacher.name, teacherId: teacher.id, department: teacher.department, status: "active",
-      }])
+      api.post("/api/teacher-assignments/", payload)
+        .then(r => setAssignments((prev) => [...prev, r.data]))
+        .catch(() => {})
     }
     setOpen(false)
   }
-  const handleDelete = (id: string) => setAssignments((prev) => prev.filter((a) => a.id !== id))
+  const handleDelete = (id: string | number) => {
+    api.delete(`/api/teacher-assignments/${id}/`).catch(() => {})
+    setAssignments((prev) => prev.filter((a) => a.id !== id))
+  }
 
   const depCounts = departments.map((d) => ({ dept: d, count: assignments.filter((a) => a.department === d).length }))
 
@@ -159,19 +162,19 @@ export default function AssignmentsPage() {
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
                         <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                          {a.teacher.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                          {(a.teacherName || a.teacher || "").split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
                         </AvatarFallback>
                       </Avatar>
-                      <span className="font-medium">{a.teacher}</span>
+                      <span className="font-medium">{a.teacherName || a.teacher}</span>
                     </div>
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <BookOpen className="h-3.5 w-3.5 text-muted-foreground" />
-                      {a.subject}
+                      {a.subjectName || a.subject}
                     </div>
                   </TableCell>
-                  <TableCell><Badge variant="outline">{a.class}</Badge></TableCell>
+                  <TableCell><Badge variant="outline">{a.className || a.class}</Badge></TableCell>
                   <TableCell className="hidden sm:table-cell">
                     <Badge variant="secondary">{a.department}</Badge>
                   </TableCell>
@@ -207,7 +210,7 @@ export default function AssignmentsPage() {
               <Label>Class</Label>
               <Select value={form.class} onValueChange={(v) => setForm((f) => ({ ...f, class: v }))}>
                 <SelectTrigger><SelectValue placeholder="Select class" /></SelectTrigger>
-                <SelectContent>{classesExtended.map((c) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}</SelectContent>
+                <SelectContent>{classes.map((c) => <SelectItem key={c.id} value={c.name}>{c.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="grid gap-1.5">
@@ -221,7 +224,7 @@ export default function AssignmentsPage() {
               <Label>Teacher</Label>
               <Select value={form.teacherId} onValueChange={(v) => setForm((f) => ({ ...f, teacherId: v }))}>
                 <SelectTrigger><SelectValue placeholder="Select teacher" /></SelectTrigger>
-                <SelectContent>{teachersExtended.filter((t) => t.status === "active").map((t) => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}</SelectContent>
+                <SelectContent>{teachersExtended.filter((t) => t.status === "active").map((t) => <SelectItem key={t.id} value={String(t.id)}>{t.name}</SelectItem>)}</SelectContent>
               </Select>
             </div>
           </div>

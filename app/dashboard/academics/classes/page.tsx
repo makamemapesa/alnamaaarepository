@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { api, getResults } from "@/lib/api-client"
 import {
   Search,
   Plus,
@@ -57,9 +58,9 @@ import {
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
-import { classesExtended, teachersExtended, subjects } from "@/lib/mock-data"
 
-function ClassDetailDialog({ cls }: { cls: (typeof classesExtended)[number] }) {
+
+function ClassDetailDialog({ cls }: { cls: any }) {
   return (
     <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
       <DialogHeader>
@@ -77,7 +78,7 @@ function ClassDetailDialog({ cls }: { cls: (typeof classesExtended)[number] }) {
           {[
             { label: "Section", value: cls.section },
             { label: "Room", value: cls.room },
-            { label: "Capacity", value: `${cls.students}/${cls.capacity}` },
+            { label: "Capacity", value: `${cls.studentCount ?? cls.students ?? 0}/${cls.capacity}` },
             { label: "Status", value: cls.status },
           ].map((item) => (
             <div key={item.label} className="flex flex-col gap-1 rounded-lg bg-muted/50 p-3">
@@ -91,9 +92,9 @@ function ClassDetailDialog({ cls }: { cls: (typeof classesExtended)[number] }) {
         <div className="flex flex-col gap-2">
           <div className="flex items-center justify-between">
             <span className="text-sm font-medium text-card-foreground">Capacity Utilization</span>
-            <span className="text-sm text-muted-foreground">{Math.round((cls.students / cls.capacity) * 100)}%</span>
+            <span className="text-sm text-muted-foreground">{cls.capacity ? Math.round(((cls.studentCount ?? cls.students ?? 0) / cls.capacity) * 100) : 0}%</span>
           </div>
-          <Progress value={(cls.students / cls.capacity) * 100} className="h-2.5" />
+          <Progress value={cls.capacity ? ((cls.studentCount ?? cls.students ?? 0) / cls.capacity) * 100 : 0} className="h-2.5" />
         </div>
 
         <Separator />
@@ -103,10 +104,10 @@ function ClassDetailDialog({ cls }: { cls: (typeof classesExtended)[number] }) {
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Class Teacher</span>
           <div className="flex items-center gap-3 rounded-lg border border-border p-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10 text-sm font-medium text-primary">
-              {cls.classTeacher.split(" ").map((n) => n[0]).join("")}
+              {(cls.classTeacherName || cls.classTeacher || "").split(" ").map((n: string) => n[0]).join("")}
             </div>
             <div>
-              <p className="text-sm font-medium text-card-foreground">{cls.classTeacher}</p>
+              <p className="text-sm font-medium text-card-foreground">{cls.classTeacherName || cls.classTeacher}</p>
               <p className="text-xs text-muted-foreground">Class Teacher</p>
             </div>
           </div>
@@ -117,10 +118,10 @@ function ClassDetailDialog({ cls }: { cls: (typeof classesExtended)[number] }) {
         {/* Subjects */}
         <div className="flex flex-col gap-2">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Subjects Offered ({cls.subjects.length})
+            Subjects Offered ({(cls.subjectNames || cls.subjects || []).length})
           </span>
           <div className="flex flex-wrap gap-2">
-            {cls.subjects.map((subject) => (
+            {(cls.subjectNames || cls.subjects || []).map((subject: string) => (
               <Badge key={subject} variant="secondary" className="text-xs">
                 {subject}
               </Badge>
@@ -136,20 +137,29 @@ export default function ClassesPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [sectionFilter, setSectionFilter] = useState("all")
   const [addDialogOpen, setAddDialogOpen] = useState(false)
-  const [viewingClass, setViewingClass] = useState<(typeof classesExtended)[number] | null>(null)
+  const [viewingClass, setViewingClass] = useState<any>(null)
+  const [classes, setClasses] = useState<any[]>([])
+  const [teachers, setTeachers] = useState<any[]>([])
+  const [subjectsList, setSubjectsList] = useState<any[]>([])
 
-  const filteredClasses = classesExtended.filter((cls) => {
+  useEffect(() => {
+    api.get("/api/classes/").then(r => setClasses(getResults(r.data))).catch(() => {})
+    api.get("/api/teachers/").then(r => setTeachers(getResults(r.data))).catch(() => {})
+    api.get("/api/subjects/").then(r => setSubjectsList(getResults(r.data))).catch(() => {})
+  }, [])
+
+  const filteredClasses = classes.filter((cls) => {
     const matchesSearch = cls.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      cls.classTeacher.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (cls.classTeacherName || cls.classTeacher || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       cls.room.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesSection = sectionFilter === "all" || cls.section.toLowerCase() === sectionFilter
     return matchesSearch && matchesSection
   })
 
-  const totalStudents = classesExtended.reduce((sum, c) => sum + c.students, 0)
-  const totalCapacity = classesExtended.reduce((sum, c) => sum + c.capacity, 0)
-  const juniorClasses = classesExtended.filter((c) => c.section === "Junior")
-  const seniorClasses = classesExtended.filter((c) => c.section === "Senior")
+  const totalStudents = classes.reduce((sum, c) => sum + (c.studentCount ?? c.students ?? 0), 0)
+  const totalCapacity = classes.reduce((sum, c) => sum + (c.capacity ?? 0), 0)
+  const juniorClasses = classes.filter((c) => c.section === "Junior")
+  const seniorClasses = classes.filter((c) => c.section === "Senior")
 
   return (
     <>
@@ -167,7 +177,7 @@ export default function ClassesPage() {
                 <BookOpen className="h-5 w-5 text-primary" />
               </div>
               <p className="text-2xl font-bold text-card-foreground" style={{ fontFamily: "var(--font-heading)" }}>
-                {classesExtended.length}
+                {classes.length}
               </p>
               <p className="text-[11px] text-muted-foreground">Total Classes</p>
             </CardContent>
@@ -227,8 +237,9 @@ export default function ClassesPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-              {classesExtended.map((cls) => {
-                const percentage = Math.round((cls.students / cls.capacity) * 100)
+              {classes.map((cls) => {
+                const studentCount = cls.studentCount ?? cls.students ?? 0
+                const percentage = cls.capacity ? Math.round((studentCount / cls.capacity) * 100) : 0
                 return (
                   <div key={cls.id} className="flex items-center gap-3 rounded-lg border border-border p-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary shrink-0">
@@ -237,7 +248,7 @@ export default function ClassesPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between mb-1">
                         <span className="text-sm font-medium text-card-foreground">{cls.name}</span>
-                        <span className="text-xs text-muted-foreground">{cls.students}/{cls.capacity}</span>
+                        <span className="text-xs text-muted-foreground">{cls.studentCount ?? cls.students ?? 0}/{cls.capacity}</span>
                       </div>
                       <Progress
                         value={percentage}
@@ -316,8 +327,8 @@ export default function ClassesPage() {
                         <Select>
                           <SelectTrigger><SelectValue placeholder="Assign a class teacher" /></SelectTrigger>
                           <SelectContent>
-                            {teachersExtended.filter(t => t.status === "active").map((teacher) => (
-                              <SelectItem key={teacher.id} value={teacher.id}>{teacher.name}</SelectItem>
+                            {teachers.filter((t: any) => t.status === "active").map((teacher: any) => (
+                              <SelectItem key={teacher.id} value={String(teacher.id)}>{teacher.name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -392,7 +403,7 @@ export default function ClassesPage() {
                         </Badge>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                        <span className="text-sm text-card-foreground">{cls.classTeacher}</span>
+                        <span className="text-sm text-card-foreground">{cls.classTeacherName || cls.classTeacher || "—"}</span>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
                         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
@@ -402,12 +413,12 @@ export default function ClassesPage() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-card-foreground">{cls.students}</span>
+                          <span className="text-sm font-medium text-card-foreground">{cls.studentCount ?? cls.students ?? 0}</span>
                           <span className="text-xs text-muted-foreground">/ {cls.capacity}</span>
                         </div>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                        <span className="text-sm text-muted-foreground">{cls.subjects.length} subjects</span>
+                        <span className="text-sm text-muted-foreground">{(cls.subjectNames || cls.subjects || []).length} subjects</span>
                       </TableCell>
                       <TableCell>
                         <Badge variant="secondary" className="text-[11px] bg-accent/10 text-accent">
@@ -448,7 +459,7 @@ export default function ClassesPage() {
             {/* Pagination */}
             <div className="flex items-center justify-between mt-4">
               <p className="text-xs text-muted-foreground">
-                Showing {filteredClasses.length} of {classesExtended.length} classes
+                Showing {filteredClasses.length} of {classes.length} classes
               </p>
               <div className="flex items-center gap-1">
                 <Button variant="outline" size="sm" disabled className="text-xs">Previous</Button>

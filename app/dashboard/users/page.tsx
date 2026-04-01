@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { api, getResults } from "@/lib/api-client"
 import {
   Search,
   Plus,
@@ -52,9 +53,24 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { users } from "@/lib/mock-data"
+
+
+const roleLabels: Record<string, string> = {
+  super_admin: "Super Administrator",
+  admin: "School Administrator",
+  teacher: "Teacher",
+  accountant: "Accountant",
+  parent: "Parent",
+}
 
 const roleIcons: Record<string, React.ElementType> = {
+  "super_admin": Shield,
+  "admin": UserCog,
+  "teacher": GraduationCap,
+  "accountant": Calculator,
+  "parent": UsersIcon,
+  "student": User,
+  // legacy labels for backwards compat
   "Super Administrator": Shield,
   "School Administrator": UserCog,
   "Teacher": GraduationCap,
@@ -64,6 +80,12 @@ const roleIcons: Record<string, React.ElementType> = {
 }
 
 const roleColors: Record<string, string> = {
+  "super_admin": "bg-primary/10 text-primary",
+  "admin": "bg-accent/10 text-accent",
+  "teacher": "bg-chart-3/10 text-chart-3",
+  "accountant": "bg-chart-4/10 text-chart-4",
+  "parent": "bg-chart-5/10 text-chart-5",
+  // legacy labels
   "Super Administrator": "bg-primary/10 text-primary",
   "School Administrator": "bg-accent/10 text-accent",
   "Teacher": "bg-chart-3/10 text-chart-3",
@@ -74,21 +96,30 @@ const roleColors: Record<string, string> = {
 export default function UsersPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [roleFilter, setRoleFilter] = useState("all")
+  const [usersData, setUsersData] = useState<any[]>([])
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch = user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase())
+  useEffect(() => {
+    api.get("/api/users/").then(r => setUsersData(getResults(r.data))).catch(() => {})
+  }, [])
+
+  const getDisplayName = (user: any) =>
+    [user.firstName, user.lastName].filter(Boolean).join(" ") || user.username || user.email || "Unknown"
+
+  const filteredUsers = usersData.filter((user) => {
+    const displayName = getDisplayName(user)
+    const matchesSearch = displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (user.email || "").toLowerCase().includes(searchQuery.toLowerCase())
     const matchesRole = roleFilter === "all" || user.role === roleFilter
     return matchesSearch && matchesRole
   })
 
   const roleCounts = {
-    all: users.length,
-    "Super Administrator": users.filter((u) => u.role === "Super Administrator").length,
-    "School Administrator": users.filter((u) => u.role === "School Administrator").length,
-    Teacher: users.filter((u) => u.role === "Teacher").length,
-    Accountant: users.filter((u) => u.role === "Accountant").length,
-    Parent: users.filter((u) => u.role === "Parent").length,
+    all: usersData.length,
+    super_admin: usersData.filter((u) => u.role === "super_admin").length,
+    admin: usersData.filter((u) => u.role === "admin").length,
+    teacher: usersData.filter((u) => u.role === "teacher").length,
+    accountant: usersData.filter((u) => u.role === "accountant").length,
+    parent: usersData.filter((u) => u.role === "parent").length,
   }
 
   return (
@@ -102,12 +133,12 @@ export default function UsersPage() {
         {/* Role Overview Cards */}
         <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
           {[
-            { role: "All Users", count: users.length, icon: UsersIcon, color: "bg-secondary text-secondary-foreground" },
-            { role: "Super Admin", count: roleCounts["Super Administrator"], icon: Shield, color: "bg-primary/10 text-primary" },
-            { role: "Admin", count: roleCounts["School Administrator"], icon: UserCog, color: "bg-accent/10 text-accent" },
-            { role: "Teachers", count: roleCounts.Teacher, icon: GraduationCap, color: "bg-chart-3/10 text-chart-3" },
-            { role: "Accountants", count: roleCounts.Accountant, icon: Calculator, color: "bg-chart-4/10 text-chart-4" },
-            { role: "Parents", count: roleCounts.Parent, icon: UsersIcon, color: "bg-chart-5/10 text-chart-5" },
+            { role: "All Users", count: usersData.length, icon: UsersIcon, color: "bg-secondary text-secondary-foreground" },
+            { role: "Super Admin", count: roleCounts.super_admin, icon: Shield, color: "bg-primary/10 text-primary" },
+            { role: "Admin", count: roleCounts.admin, icon: UserCog, color: "bg-accent/10 text-accent" },
+            { role: "Teachers", count: roleCounts.teacher, icon: GraduationCap, color: "bg-chart-3/10 text-chart-3" },
+            { role: "Accountants", count: roleCounts.accountant, icon: Calculator, color: "bg-chart-4/10 text-chart-4" },
+            { role: "Parents", count: roleCounts.parent, icon: UsersIcon, color: "bg-chart-5/10 text-chart-5" },
           ].map((item) => (
             <Card key={item.role} className="cursor-pointer hover:border-primary/20 transition-colors">
               <CardContent className="p-4 flex flex-col items-center text-center gap-2">
@@ -202,11 +233,11 @@ export default function UsersPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Roles</SelectItem>
-                  <SelectItem value="Super Administrator">Super Admin</SelectItem>
-                  <SelectItem value="School Administrator">Admin</SelectItem>
-                  <SelectItem value="Teacher">Teacher</SelectItem>
-                  <SelectItem value="Accountant">Accountant</SelectItem>
-                  <SelectItem value="Parent">Parent</SelectItem>
+                  <SelectItem value="super_admin">Super Admin</SelectItem>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="teacher">Teacher</SelectItem>
+                  <SelectItem value="accountant">Accountant</SelectItem>
+                  <SelectItem value="parent">Parent</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -225,6 +256,9 @@ export default function UsersPage() {
                 </TableHeader>
                 <TableBody>
                   {filteredUsers.map((user) => {
+                    const displayName = getDisplayName(user)
+                    const displayRole = roleLabels[user.role] || user.role || ""
+                    const userStatus = user.isActive === false ? "inactive" : user.status || "active"
                     const RoleIcon = roleIcons[user.role] || User
                     return (
                       <TableRow key={user.id}>
@@ -232,11 +266,11 @@ export default function UsersPage() {
                           <div className="flex items-center gap-3">
                             <Avatar className="h-9 w-9">
                               <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
-                                {user.name.split(" ").map((n) => n[0]).join("")}
+                                {displayName.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
                               </AvatarFallback>
                             </Avatar>
                             <div>
-                              <p className="text-sm font-medium text-card-foreground">{user.name}</p>
+                              <p className="text-sm font-medium text-card-foreground">{displayName}</p>
                               <p className="text-[11px] text-muted-foreground">{user.email}</p>
                             </div>
                           </div>
@@ -244,22 +278,24 @@ export default function UsersPage() {
                         <TableCell>
                           <Badge variant="secondary" className={`text-[11px] ${roleColors[user.role] || ""}`}>
                             <RoleIcon className="mr-1 h-3 w-3" />
-                            {user.role}
+                            {displayRole}
                           </Badge>
                         </TableCell>
                         <TableCell className="hidden md:table-cell">
-                          <span className="text-sm text-muted-foreground">{user.lastLogin}</span>
+                          <span className="text-sm text-muted-foreground">
+                            {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString("en-NG") : "Never"}
+                          </span>
                         </TableCell>
                         <TableCell>
                           <Badge
                             variant="secondary"
                             className={`text-[11px] ${
-                              user.status === "active"
+                              userStatus === "active"
                                 ? "bg-accent/10 text-accent"
                                 : "bg-destructive/10 text-destructive"
                             }`}
                           >
-                            {user.status}
+                            {userStatus}
                           </Badge>
                         </TableCell>
                         <TableCell>

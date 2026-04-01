@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { api, getResults } from "@/lib/api-client"
 import { Search, Download, Printer, FileText, GraduationCap, Award } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { Button } from "@/components/ui/button"
@@ -19,49 +20,6 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Progress } from "@/components/ui/progress"
 
-const reportCardData = [
-  { id: "R001", studentName: "Amina Hassan",   regNo: "FISS/2024/001", class: "JSS 3A", position: 1,  outOf: 32, term: "Term 2, 2025/2026", average: 85.75, grade: "A",  status: "published", subjects: [
-    { name: "Mathematics",    ca: 28, exam: 57, total: 85, grade: "A",  position: 1 },
-    { name: "English",        ca: 25, exam: 53, total: 78, grade: "B+", position: 2 },
-    { name: "Science",        ca: 30, exam: 62, total: 92, grade: "A+", position: 1 },
-    { name: "Social Studies", ca: 28, exam: 60, total: 88, grade: "A",  position: 1 },
-    { name: "Civic Edu.",     ca: 22, exam: 58, total: 80, grade: "A",  position: 2 },
-    { name: "Comp. Science",  ca: 26, exam: 56, total: 82, grade: "A",  position: 1 },
-  ]},
-  { id: "R002", studentName: "David Adamu",    regNo: "FISS/2024/004", class: "SS 3A",  position: 1,  outOf: 29, term: "Term 2, 2025/2026", average: 90.00, grade: "A+", status: "published", subjects: [
-    { name: "Mathematics",    ca: 30, exam: 62, total: 92, grade: "A+", position: 1 },
-    { name: "English",        ca: 28, exam: 60, total: 88, grade: "A",  position: 1 },
-    { name: "Physics",        ca: 30, exam: 65, total: 95, grade: "A+", position: 1 },
-    { name: "Chemistry",      ca: 27, exam: 58, total: 85, grade: "A",  position: 1 },
-    { name: "Biology",        ca: 25, exam: 60, total: 85, grade: "A",  position: 1 },
-    { name: "Economics",      ca: 26, exam: 59, total: 85, grade: "A",  position: 1 },
-  ]},
-  { id: "R003", studentName: "Emmanuel Obi",   regNo: "FISS/2024/002", class: "SS 2B",  position: 5,  outOf: 31, term: "Term 2, 2025/2026", average: 71.25, grade: "B",  status: "published", subjects: [
-    { name: "Mathematics",    ca: 22, exam: 50, total: 72, grade: "B",  position: 5 },
-    { name: "English",        ca: 20, exam: 45, total: 65, grade: "C+", position: 8 },
-    { name: "Physics",        ca: 24, exam: 54, total: 78, grade: "B+", position: 4 },
-    { name: "Chemistry",      ca: 20, exam: 50, total: 70, grade: "B",  position: 6 },
-    { name: "Biology",        ca: 22, exam: 53, total: 75, grade: "B+", position: 5 },
-    { name: "Economics",      ca: 18, exam: 49, total: 67, grade: "C+", position: 9 },
-  ]},
-  { id: "R004", studentName: "Aisha Garba",    regNo: "FISS/2024/011", class: "JSS 2A", position: 1,  outOf: 30, term: "Term 2, 2025/2026", average: 93.00, grade: "A+", status: "published", subjects: [
-    { name: "Mathematics",    ca: 30, exam: 66, total: 96, grade: "A+", position: 1 },
-    { name: "English",        ca: 29, exam: 63, total: 92, grade: "A+", position: 1 },
-    { name: "Science",        ca: 28, exam: 62, total: 90, grade: "A",  position: 1 },
-    { name: "Social Studies", ca: 29, exam: 65, total: 94, grade: "A+", position: 1 },
-    { name: "French",         ca: 27, exam: 60, total: 87, grade: "A",  position: 1 },
-    { name: "Comp. Science",  ca: 28, exam: 61, total: 89, grade: "A",  position: 1 },
-  ]},
-  { id: "R005", studentName: "Chukwuemeka Ike", regNo: "FISS/2024/010", class: "SS 1B", position: 28, outOf: 36, term: "Term 2, 2025/2026", average: 43.75, grade: "F",  status: "pending", subjects: [
-    { name: "Mathematics",    ca: 12, exam: 30, total: 42, grade: "F",  position: 28 },
-    { name: "English",        ca: 10, exam: 28, total: 38, grade: "F",  position: 29 },
-    { name: "Physics",        ca: 14, exam: 36, total: 50, grade: "D",  position: 26 },
-    { name: "Chemistry",      ca: 12, exam: 33, total: 45, grade: "D",  position: 27 },
-    { name: "Biology",        ca: 11, exam: 35, total: 46, grade: "D",  position: 25 },
-    { name: "Economics",      ca: 10, exam: 32, total: 42, grade: "F",  position: 30 },
-  ]},
-]
-
 const gradeColor = (grade: string) => {
   if (grade.startsWith("A")) return "text-accent font-semibold"
   if (grade.startsWith("B")) return "text-blue-600 font-semibold"
@@ -71,19 +29,24 @@ const gradeColor = (grade: string) => {
 }
 
 export default function ReportCardsPage() {
+  const [reportCardData, setReportCardData] = useState<any[]>([])
   const [search, setSearch] = useState("")
   const [classFilter, setClassFilter] = useState("all")
-  const [selectedReport, setSelectedReport] = useState<typeof reportCardData[0] | null>(null)
+  const [selectedReport, setSelectedReport] = useState<any>(null)
+
+  useEffect(() => {
+    api.get("/api/exam-results/").then(r => setReportCardData(getResults(r.data))).catch(() => {})
+  }, [])
 
   const filtered = reportCardData.filter((r) => {
     const q = search.toLowerCase()
     return (
       (r.studentName.toLowerCase().includes(q) || r.regNo.toLowerCase().includes(q)) &&
-      (classFilter === "all" || r.class === classFilter)
+      (classFilter === "all" || (r.className || r.class) === classFilter)
     )
   })
 
-  const uniqueClasses = Array.from(new Set(reportCardData.map((r) => r.class))).sort()
+  const uniqueClasses = Array.from(new Set(reportCardData.map((r) => r.className || r.class).filter(Boolean))).sort() as string[]
   const published = reportCardData.filter((r) => r.status === "published").length
 
   return (
@@ -152,7 +115,7 @@ export default function ReportCardsPage() {
                       <p className="text-xs font-mono text-muted-foreground">{r.regNo}</p>
                     </div>
                   </TableCell>
-                  <TableCell><Badge variant="outline">{r.class}</Badge></TableCell>
+                  <TableCell><Badge variant="outline">{r.className || r.class}</Badge></TableCell>
                   <TableCell className="text-center">{r.position} / {r.outOf}</TableCell>
                   <TableCell><span className={gradeColor(r.grade)}>{r.average.toFixed(1)}%</span></TableCell>
                   <TableCell><span className={gradeColor(r.grade)}>{r.grade}</span></TableCell>
@@ -194,7 +157,7 @@ export default function ReportCardsPage() {
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div><span className="text-muted-foreground">Name:</span> <span className="font-medium">{selectedReport.studentName}</span></div>
                 <div><span className="text-muted-foreground">Reg. No.:</span> <span className="font-mono">{selectedReport.regNo}</span></div>
-                <div><span className="text-muted-foreground">Class:</span> <span className="font-medium">{selectedReport.class}</span></div>
+                <div><span className="text-muted-foreground">Class:</span> <span className="font-medium">{selectedReport.className || selectedReport.class}</span></div>
                 <div><span className="text-muted-foreground">Position:</span> <span className="font-medium">{selectedReport.position} of {selectedReport.outOf}</span></div>
               </div>
               <Separator />
@@ -211,7 +174,7 @@ export default function ReportCardsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {selectedReport.subjects.map((s) => (
+                  {(selectedReport.subjects || []).map((s: any) => (
                     <TableRow key={s.name}>
                       <TableCell className="font-medium">{s.name}</TableCell>
                       <TableCell className="text-center">{s.ca}</TableCell>

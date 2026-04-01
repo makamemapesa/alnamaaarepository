@@ -1,26 +1,41 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Eye, EyeOff, Lock, Mail, School } from "lucide-react"
+import { Eye, EyeOff, Lock, Mail } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import axios from "axios"
+import { setTokens } from "@/lib/auth"
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
 export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [role, setRole] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState("")
+  const emailRef = useRef<HTMLInputElement>(null)
+  const passwordRef = useRef<HTMLInputElement>(null)
   const router = useRouter()
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsLoading(true)
-    setTimeout(() => {
+    setError("")
+    try {
+      const res = await axios.post(`${API}/api/auth/token/`, {
+        username: emailRef.current?.value,
+        password: passwordRef.current?.value,
+      })
+      setTokens(res.data.access, res.data.refresh)
       router.push("/dashboard")
-    }, 1000)
+    } catch {
+      setError("Invalid email or password. Please try again.")
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -125,7 +140,8 @@ export default function LoginPage() {
                 <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="email"
-                  type="email"
+                  ref={emailRef}
+                  type="text"
                   placeholder="admin@farukaktas.edu"
                   className="pl-10 bg-card"
                   required
@@ -146,6 +162,7 @@ export default function LoginPage() {
                 <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   id="password"
+                  ref={passwordRef}
                   type={showPassword ? "text" : "password"}
                   placeholder="Enter your password"
                   className="pl-10 pr-10 bg-card"
@@ -161,6 +178,10 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
+
+            {error && (
+              <p className="text-sm text-destructive text-center rounded-md bg-destructive/10 px-3 py-2">{error}</p>
+            )}
 
             <Button type="submit" className="w-full mt-2" disabled={isLoading}>
               {isLoading ? (
@@ -178,7 +199,7 @@ export default function LoginPage() {
             <p className="text-xs font-medium text-muted-foreground mb-2">Demo Credentials</p>
             <div className="flex flex-col gap-1 text-xs text-muted-foreground">
               <span>Email: admin@farukaktas.edu</span>
-              <span>Password: demo123</span>
+              <span>Password: admin123</span>
               <span>Role: Super Administrator</span>
             </div>
           </div>
