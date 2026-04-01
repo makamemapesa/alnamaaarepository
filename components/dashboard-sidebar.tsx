@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import {
   LayoutDashboard,
   Users,
@@ -29,6 +29,7 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
+import { api, getResults } from "@/lib/api-client"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -108,7 +109,6 @@ const navigation = [
     label: "Notifications",
     href: "/dashboard/notifications",
     icon: Bell,
-    badge: 2,
   },
   {
     label: "Audit Logs",
@@ -125,9 +125,10 @@ const navigation = [
 interface NavItemProps {
   item: (typeof navigation)[number]
   collapsed: boolean
+  unreadCount?: number
 }
 
-function NavItem({ item, collapsed }: NavItemProps) {
+function NavItem({ item, collapsed, unreadCount = 0 }: NavItemProps) {
   const pathname = usePathname()
   const [isOpen, setIsOpen] = useState(false)
   const Icon = item.icon
@@ -198,9 +199,9 @@ function NavItem({ item, collapsed }: NavItemProps) {
     >
       <Icon className="h-5 w-5 shrink-0" />
       {!collapsed && <span className="flex-1">{item.label}</span>}
-      {!collapsed && item.badge && (
+      {!collapsed && item.href === "/dashboard/notifications" && unreadCount > 0 && (
         <Badge className="bg-accent text-accent-foreground h-5 px-1.5 text-xs">
-          {item.badge}
+          {unreadCount}
         </Badge>
       )}
     </Link>
@@ -210,6 +211,14 @@ function NavItem({ item, collapsed }: NavItemProps) {
 export function DashboardSidebar() {
   const [collapsed, setCollapsed] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
+  const [unreadCount, setUnreadCount] = useState(0)
+
+  useEffect(() => {
+    api.get("/api/notifications/?read=false").then(r => {
+      const items = getResults(r.data)
+      setUnreadCount(items.length)
+    }).catch(() => {})
+  }, [])
 
   return (
     <>
@@ -270,7 +279,7 @@ export function DashboardSidebar() {
         <ScrollArea className="flex-1 min-h-0 px-3 py-3">
           <nav className="flex flex-col gap-1">
             {navigation.map((item) => (
-              <NavItem key={item.label} item={item} collapsed={collapsed} />
+              <NavItem key={item.label} item={item} collapsed={collapsed} unreadCount={unreadCount} />
             ))}
           </nav>
         </ScrollArea>

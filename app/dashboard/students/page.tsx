@@ -43,6 +43,7 @@ import {
 } from "@/components/ui/select"
 import { recentStudents } from "@/lib/mock-data"
 import { api, getResults } from "@/lib/api-client"
+import { exportCSV } from "@/lib/utils"
 
 export default function StudentsPage() {
   const [searchQuery, setSearchQuery] = useState("")
@@ -76,10 +77,10 @@ export default function StudentsPage() {
         {/* Summary Cards */}
         <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
           {[
-            { label: "Total Students", value: "1,247", color: "bg-primary/10 text-primary" },
-            { label: "Active", value: "1,198", color: "bg-accent/10 text-accent" },
-            { label: "Suspended", value: "12", color: "bg-destructive/10 text-destructive" },
-            { label: "New This Term", value: "156", color: "bg-chart-3/10 text-chart-3" },
+            { label: "Total Students", value: students.length, color: "bg-primary/10 text-primary" },
+            { label: "Active", value: students.filter(s => s.status === "active").length, color: "bg-accent/10 text-accent" },
+            { label: "Suspended", value: students.filter(s => s.status === "suspended").length, color: "bg-destructive/10 text-destructive" },
+            { label: "New This Term", value: students.filter(s => new Date(s.admissionDate) >= new Date(new Date().getFullYear(), 0, 1)).length, color: "bg-chart-3/10 text-chart-3" },
           ].map((stat) => (
             <Card key={stat.label}>
               <CardContent className="p-4">
@@ -101,7 +102,7 @@ export default function StudentsPage() {
                 <CardDescription>Comprehensive list of all enrolled students</CardDescription>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => exportCSV(filteredStudents, "students.csv")}>
                   <Download className="mr-2 h-4 w-4" /> Export
                 </Button>
                 <Link href="/dashboard/students/register">

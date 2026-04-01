@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { api, getResults } from "@/lib/api-client"
+import { exportCSV } from "@/lib/utils"
 import { Search, Download, TrendingUp, Award, Users, BarChart2 } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { Button } from "@/components/ui/button"
@@ -96,7 +97,7 @@ export default function ResultsPage() {
               <CardTitle>Results Table</CardTitle>
               <CardDescription>Mid-Term Examination · Term 2, 2025/2026</CardDescription>
             </div>
-            <Button variant="outline" size="sm" className="gap-1"><Download className="h-4 w-4" />Export</Button>
+            <Button variant="outline" size="sm" className="gap-1" onClick={() => exportCSV(filtered, "results.csv")}><Download className="h-4 w-4" />Export</Button>
           </div>
           <div className="flex flex-col gap-2 pt-2 sm:flex-row">
             <div className="relative flex-1">

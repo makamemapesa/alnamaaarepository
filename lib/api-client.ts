@@ -29,7 +29,7 @@ api.interceptors.request.use((config) => {
   if (tokens?.access) {
     config.headers.Authorization = `Bearer ${tokens.access}`
   }
-  if (config.data && typeof config.data === "object") {
+  if (config.data && typeof config.data === "object" && !(config.data instanceof FormData)) {
     config.data = convertKeys(config.data, toSnake)
   }
   return config

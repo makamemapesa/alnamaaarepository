@@ -5,6 +5,7 @@ import {
   Search, Plus, Download, CheckCircle2, Clock, CreditCard, Banknote, Smartphone, DollarSign,
 } from "lucide-react"
 import { api, getResults } from "@/lib/api-client"
+import { exportCSV } from "@/lib/utils"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -103,7 +104,7 @@ export default function PaymentsPage() {
               <CardDescription>All fee payment transactions</CardDescription>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="gap-1"><Download className="h-4 w-4" />Export</Button>
+              <Button variant="outline" size="sm" className="gap-1" onClick={() => exportCSV(filtered, "payments.csv")}><Download className="h-4 w-4" />Export</Button>
               <Button size="sm" className="gap-1" onClick={() => setOpen(true)}><Plus className="h-4 w-4" />Record Payment</Button>
             </div>
           </div>

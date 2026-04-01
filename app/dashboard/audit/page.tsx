@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { api, getResults } from "@/lib/api-client"
+import { exportCSV } from "@/lib/utils"
 import {
   Search, Shield, LogIn, Edit2, Plus, Trash2, Settings, AlertTriangle, Download,
 } from "lucide-react"
@@ -90,7 +91,7 @@ export default function AuditPage() {
               <CardTitle>Activity Log</CardTitle>
               <CardDescription>All recorded system events — today</CardDescription>
             </div>
-            <Button variant="outline" size="sm" className="gap-1"><Download className="h-4 w-4" />Export Log</Button>
+            <Button variant="outline" size="sm" className="gap-1" onClick={() => exportCSV(filtered, "audit-log.csv")}><Download className="h-4 w-4" />Export Log</Button>
           </div>
           <div className="flex flex-col gap-2 pt-2 sm:flex-row">
             <div className="relative flex-1">
