@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { api, getResults } from "@/lib/api-client"
 import {
   Search,
   Plus,
@@ -54,16 +55,16 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
-import { lessonPlans, subjects, classesExtended, teachersExtended } from "@/lib/mock-data"
 
-function LessonPlanDetailDialog({ plan }: { plan: (typeof lessonPlans)[number] }) {
+
+function LessonPlanDetailDialog({ plan }: { plan: any }) {
   return (
     <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
       <DialogHeader>
         <DialogTitle style={{ fontFamily: "var(--font-heading)" }} className="text-lg">
           {plan.topic}
         </DialogTitle>
-        <DialogDescription>{plan.subject} | {plan.class}</DialogDescription>
+        <DialogDescription>{plan.subjectName || plan.subject} | {plan.className || plan.class}</DialogDescription>
       </DialogHeader>
 
       <div className="flex flex-col gap-4 py-2">
@@ -117,20 +118,31 @@ export default function LessonPlansPage() {
   const [subjectFilter, setSubjectFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
   const [addDialogOpen, setAddDialogOpen] = useState(false)
-  const [viewingPlan, setViewingPlan] = useState<(typeof lessonPlans)[number] | null>(null)
+  const [viewingPlan, setViewingPlan] = useState<any>(null)
+  const [lessonPlansData, setLessonPlansData] = useState<any[]>([])
+  const [subjectsData, setSubjectsData] = useState<any[]>([])
+  const [classes, setClasses] = useState<any[]>([])
+  const [teachers, setTeachers] = useState<any[]>([])
 
-  const filteredPlans = lessonPlans.filter((plan) => {
+  useEffect(() => {
+    api.get("/api/lesson-plans/").then(r => setLessonPlansData(getResults(r.data))).catch(() => {})
+    api.get("/api/subjects/").then(r => setSubjectsData(getResults(r.data))).catch(() => {})
+    api.get("/api/classes/").then(r => setClasses(getResults(r.data))).catch(() => {})
+    api.get("/api/teachers/").then(r => setTeachers(getResults(r.data))).catch(() => {})
+  }, [])
+
+  const filteredPlans = lessonPlansData.filter((plan) => {
     const matchesSearch = plan.topic.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      plan.teacher.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      plan.subject.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesSubject = subjectFilter === "all" || plan.subject === subjectFilter
+      (plan.teacherName || plan.teacher || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (plan.subjectName || plan.subject || "").toLowerCase().includes(searchQuery.toLowerCase())
+    const matchesSubject = subjectFilter === "all" || (plan.subjectName || plan.subject) === subjectFilter
     const matchesStatus = statusFilter === "all" || plan.status === statusFilter
     return matchesSearch && matchesSubject && matchesStatus
   })
 
-  const completedCount = lessonPlans.filter(p => p.status === "completed").length
-  const upcomingCount = lessonPlans.filter(p => p.status === "upcoming").length
-  const uniqueSubjects = [...new Set(lessonPlans.map(p => p.subject))]
+  const completedCount = lessonPlansData.filter(p => p.status === "completed").length
+  const upcomingCount = lessonPlansData.filter(p => p.status === "upcoming").length
+  const uniqueSubjects = [...new Set(lessonPlansData.map((p: any) => p.subjectName || p.subject).filter(Boolean))]
 
   return (
     <>
@@ -148,7 +160,7 @@ export default function LessonPlansPage() {
                 <FileText className="h-5 w-5 text-primary" />
               </div>
               <p className="text-2xl font-bold text-card-foreground" style={{ fontFamily: "var(--font-heading)" }}>
-                {lessonPlans.length}
+                {lessonPlansData.length}
               </p>
               <p className="text-[11px] text-muted-foreground">Total Plans</p>
             </CardContent>
@@ -218,7 +230,7 @@ export default function LessonPlansPage() {
                           <Select>
                             <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                             <SelectContent>
-                              {subjects.filter(s => s.status === "active").map((sub) => (
+                              {subjectsData.filter((s: any) => s.status === "active").map((sub: any) => (
                                 <SelectItem key={sub.id} value={sub.name}>{sub.name}</SelectItem>
                               ))}
                             </SelectContent>
@@ -229,7 +241,7 @@ export default function LessonPlansPage() {
                           <Select>
                             <SelectTrigger><SelectValue placeholder="Select" /></SelectTrigger>
                             <SelectContent>
-                              {classesExtended.map((cls) => (
+                              {classes.map((cls: any) => (
                                 <SelectItem key={cls.id} value={cls.name}>{cls.name}</SelectItem>
                               ))}
                             </SelectContent>
@@ -255,7 +267,7 @@ export default function LessonPlansPage() {
                         <Select>
                           <SelectTrigger><SelectValue placeholder="Select teacher" /></SelectTrigger>
                           <SelectContent>
-                            {teachersExtended.filter(t => t.status === "active").map((t) => (
+                            {teachers.filter((t: any) => t.status === "active").map((t: any) => (
                               <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
                             ))}
                           </SelectContent>
@@ -339,13 +351,13 @@ export default function LessonPlansPage() {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary" className="text-[11px]">{plan.subject}</Badge>
+                        <Badge variant="secondary" className="text-[11px]">{plan.subjectName || plan.subject}</Badge>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                        <span className="text-sm text-card-foreground">{plan.class}</span>
+                        <span className="text-sm text-card-foreground">{plan.className || plan.class}</span>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">
-                        <span className="text-sm text-muted-foreground">{plan.teacher}</span>
+                        <span className="text-sm text-muted-foreground">{plan.teacherName || plan.teacher}</span>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
                         <span className="text-sm text-muted-foreground">{plan.week}</span>
@@ -381,7 +393,7 @@ export default function LessonPlansPage() {
 
             <div className="flex items-center justify-between mt-4">
               <p className="text-xs text-muted-foreground">
-                Showing {filteredPlans.length} of {lessonPlans.length} lesson plans
+                Showing {filteredPlans.length} of {lessonPlansData.length} lesson plans
               </p>
             </div>
           </CardContent>

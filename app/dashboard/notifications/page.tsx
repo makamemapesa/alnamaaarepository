@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { api, getResults } from "@/lib/api-client"
 import {
   Bell, AlertTriangle, CheckCircle2, Info, CheckCheck, Trash2, BellOff,
 } from "lucide-react"
@@ -11,18 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select"
-import { notifications as initialNotifications } from "@/lib/mock-data"
-
-const extraNotifications = [
-  { id: "NOT006", title: "Attendance Alert",      message: "Attendance rate dropped below 90% in SS 3B on Friday",       type: "warning" as const, date: "2026-02-23", read: false },
-  { id: "NOT007", title: "Exam Timetable Published", message: "Third-term examination timetable has been posted",          type: "info"    as const, date: "2026-02-22", read: false },
-  { id: "NOT008", title: "User Account Created",  message: "New teacher account created for Mrs. Comfort Ade",             type: "success" as const, date: "2026-02-20", read: true },
-  { id: "NOT009", title: "Fee Structure Updated", message: "SS 3 tuition fee updated from ₦115,000 to ₦120,000",          type: "info"    as const, date: "2026-02-19", read: true },
-]
-
-const allInitial = [...initialNotifications, ...extraNotifications]
-
-type Notif = typeof allInitial[0]
+type Notif = { id: string | number; title: string; message: string; type: "warning" | "success" | "info"; date: string; read: boolean }
 
 const typeIcon = (type: Notif["type"]) => {
   if (type === "warning") return <AlertTriangle className="h-5 w-5 text-yellow-500" />
@@ -37,9 +27,13 @@ const typeBg = (type: Notif["type"]) => {
 }
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState(allInitial)
+  const [notifications, setNotifications] = useState<Notif[]>([])
   const [typeFilter, setTypeFilter] = useState("all")
   const [readFilter, setReadFilter] = useState("all")
+
+  useEffect(() => {
+    api.get("/api/notifications/").then(r => setNotifications(getResults<Notif>(r.data))).catch(() => {})
+  }, [])
 
   const unread = notifications.filter((n) => !n.read).length
 
@@ -50,11 +44,19 @@ export default function NotificationsPage() {
     )
   })
 
-  const markAll = () => setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
-  const markOne = (id: string) => setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n))
-  const dismiss = (id: string) => setNotifications((prev) => prev.filter((n) => n.id !== id))
-  const clearAll = () => setNotifications([])
-
+  const markAll = () => {
+    api.post("/api/notifications/mark_all_read/").catch(() => {})
+    setNotifications((prev) => prev.map((n) => ({ ...n, read: true })))
+  }
+  const markOne = (id: string | number) => {
+    api.patch(`/api/notifications/${id}/mark_read/`).catch(() => {})
+    setNotifications((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n))
+  }
+  const dismiss = (id: string | number) => setNotifications((prev) => prev.filter((n) => n.id !== id))
+  const clearAll = () => {
+    api.delete("/api/notifications/clear_all/").catch(() => {})
+    setNotifications([])
+  }
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
       <DashboardHeader title="Notifications" description="Stay updated with system alerts, reminders and activity." />

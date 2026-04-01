@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { api, getResults } from "@/lib/api-client"
 import {
   ArrowUpCircle,
   CheckCircle2,
@@ -45,21 +46,8 @@ import {
 } from "@/components/ui/dialog"
 import { Progress } from "@/components/ui/progress"
 
-// Mock promotion data
-const promotionStudents = [
-  { id: "STU001", name: "Amina Hassan",    regNo: "FISS/2024/001", currentClass: "JSS 3A", nextClass: "SS 1A",  average: 85.75, grade: "A",  attendance: 96, feeStatus: "paid",    status: "eligible" as const },
-  { id: "STU002", name: "Emmanuel Obi",    regNo: "FISS/2024/002", currentClass: "SS 2B",  nextClass: "SS 3B",  average: 71.25, grade: "B",  attendance: 88, feeStatus: "partial", status: "eligible" as const },
-  { id: "STU003", name: "Fatima Yusuf",    regNo: "FISS/2024/003", currentClass: "JSS 1A", nextClass: "JSS 2A", average: 61.25, grade: "C",  attendance: 72, feeStatus: "unpaid",  status: "review" as const },
-  { id: "STU004", name: "David Adamu",     regNo: "FISS/2024/004", currentClass: "SS 3A",  nextClass: "Graduated", average: 90.0,  grade: "A+", attendance: 98, feeStatus: "paid",    status: "graduated" as const },
-  { id: "STU005", name: "Grace Nwosu",     regNo: "FISS/2024/005", currentClass: "JSS 2B", nextClass: "JSS 3B", average: 78.75, grade: "B+", attendance: 91, feeStatus: "unpaid",  status: "review" as const },
-  { id: "STU006", name: "Mohammed Ali",    regNo: "FISS/2024/006", currentClass: "SS 1A",  nextClass: "SS 2A",  average: 83.0,  grade: "A",  attendance: 95, feeStatus: "paid",    status: "eligible" as const },
-  { id: "STU007", name: "Sarah Johnson",   regNo: "FISS/2024/007", currentClass: "JSS 3B", nextClass: "SS 1B",  average: 55.0,  grade: "D",  attendance: 65, feeStatus: "partial", status: "repeat" as const },
-  { id: "STU008", name: "Peter Okoro",     regNo: "FISS/2024/008", currentClass: "SS 2A",  nextClass: "SS 3A",  average: 88.5,  grade: "A",  attendance: 97, feeStatus: "paid",    status: "eligible" as const },
-  { id: "STU009", name: "Khadija Bello",   regNo: "FISS/2024/009", currentClass: "JSS 1B", nextClass: "JSS 2B", average: 74.0,  grade: "B",  attendance: 89, feeStatus: "paid",    status: "eligible" as const },
-  { id: "STU010", name: "Chukwuemeka Ike", regNo: "FISS/2024/010", currentClass: "SS 1B",  nextClass: "SS 2B",  average: 48.0,  grade: "F",  attendance: 60, feeStatus: "unpaid",  status: "repeat" as const },
-  { id: "STU011", name: "Aisha Garba",     regNo: "FISS/2024/011", currentClass: "JSS 2A", nextClass: "JSS 3A", average: 92.0,  grade: "A+", attendance: 99, feeStatus: "paid",    status: "eligible" as const },
-  { id: "STU012", name: "Tunde Fashola",   regNo: "FISS/2024/012", currentClass: "SS 3B",  nextClass: "Graduated", average: 79.5,  grade: "B+", attendance: 93, feeStatus: "paid",    status: "graduated" as const },
-]
+// Mock promotion data (used as fallback structure)
+
 
 const statusConfig = {
   eligible:   { label: "Eligible",   color: "bg-accent/15 text-accent border-accent/30",               icon: CheckCircle2,    iconColor: "text-accent" },
@@ -77,13 +65,32 @@ const gradeColor = (grade: string) => {
 }
 
 export default function PromotionsPage() {
+  const [promotionStudents, setPromotionStudents] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [classFilter, setClassFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
-  const [selectedStudent, setSelectedStudent] = useState<typeof promotionStudents[0] | null>(null)
+  const [selectedStudent, setSelectedStudent] = useState<any>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false)
-  const [promoted, setPromoted] = useState<string[]>([])
+  const [promoted, setPromoted] = useState<(string | number)[]>([])
+
+  useEffect(() => {
+    api.get("/api/students/?page_size=500").then(r => {
+      const students = getResults(r.data)
+      setPromotionStudents(students.map((s: any) => ({
+        id: String(s.id),
+        name: [s.firstName, s.lastName].filter(Boolean).join(" ") || s.name || "",
+        regNo: s.regNo,
+        currentClass: s.className || s.class || "",
+        nextClass: s.promotionClass || s.nextClass || "—",
+        average: s.average ?? 0,
+        grade: s.grade || "—",
+        attendance: s.attendance ?? 0,
+        feeStatus: s.feeStatus || "unknown",
+        status: s.promotionStatus || s.status || "review",
+      })))
+    }).catch(() => {})
+  }, [])
 
   const filtered = promotionStudents.filter((s) => {
     const matchSearch =
@@ -99,7 +106,7 @@ export default function PromotionsPage() {
   const repeat     = promotionStudents.filter((s) => s.status === "repeat").length
   const graduated  = promotionStudents.filter((s) => s.status === "graduated").length
   const total      = promotionStudents.length
-  const promotionRate = Math.round(((eligible + graduated) / total) * 100)
+  const promotionRate = total > 0 ? Math.round(((eligible + graduated) / total) * 100) : 0
 
   const uniqueClasses = Array.from(new Set(promotionStudents.map((s) => s.currentClass))).sort()
 
@@ -262,7 +269,7 @@ export default function PromotionsPage() {
                 </TableRow>
               ) : (
                 filtered.map((student) => {
-                  const cfg = statusConfig[student.status]
+                  const cfg = (statusConfig as any)[student.status] ?? statusConfig.eligible
                   const StatusIcon = cfg.icon
                   const isPromoted = promoted.includes(student.id)
                   return (
@@ -271,7 +278,7 @@ export default function PromotionsPage() {
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
                             <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                              {student.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                              {String(student.name || "").split(" ").map((n) => n[0]).join("").slice(0, 2)}
                             </AvatarFallback>
                           </Avatar>
                           <span className="font-medium">{student.name}</span>

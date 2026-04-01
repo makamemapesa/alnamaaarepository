@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { api, getResults } from "@/lib/api-client"
 import { Edit, CreditCard, TrendingUp, DollarSign, BookOpen, Plus } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { Button } from "@/components/ui/button"
@@ -14,19 +15,18 @@ import {
   Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { feeStructure } from "@/lib/mock-data"
-
-const fmt = (n: number) => `₦${n.toLocaleString()}`
-
-const initFees = feeStructure.map((f, i) => ({ ...f, id: `FEE${i + 1}`, session: "2025/2026" }))
 
 export default function FeeStructurePage() {
-  const [fees, setFees] = useState(initFees)
-  const [editTarget, setEditTarget] = useState<typeof fees[0] | null>(null)
+  const [fees, setFees] = useState<any[]>([])
+  const [editTarget, setEditTarget] = useState<any>(null)
   const [form, setForm] = useState({ tuition: "", boarding: "", development: "", books: "" })
   const [open, setOpen] = useState(false)
 
-  const openEdit = (f: typeof fees[0]) => {
+  useEffect(() => {
+    api.get("/api/fees/structure/").then(r => setFees(getResults(r.data))).catch(() => {})
+  }, [])
+
+  const openEdit = (f: any) => {
     setEditTarget(f)
     setForm({ tuition: String(f.tuition), boarding: String(f.boarding), development: String(f.development), books: String(f.books) })
     setOpen(true)
@@ -39,13 +39,17 @@ export default function FeeStructurePage() {
     const development = parseInt(form.development)
     const books = parseInt(form.books)
     const total = tuition + boarding + development + books
-    setFees((prev) => prev.map((f) => f.id === editTarget.id ? { ...f, tuition, boarding, development, books, total } : f))
+    api.patch(`/api/fees/structure/${editTarget.id}/`, { tuition, boarding, development, books })
+      .then(r => setFees((prev) => prev.map((f) => f.id === editTarget.id ? { ...f, ...r.data } : f)))
+      .catch(() => setFees((prev) => prev.map((f) => f.id === editTarget.id ? { ...f, tuition, boarding, development, books, total } : f)))
     setOpen(false)
   }
 
-  const totalRevenue = fees.reduce((sum, f) => sum + f.total, 0)
-  const avgFee = Math.round(totalRevenue / fees.length)
-  const highestFee = Math.max(...fees.map((f) => f.total))
+  const fmt = (n: number) => `₦${(n ?? 0).toLocaleString()}`
+
+  const totalRevenue = fees.reduce((sum: number, f: any) => sum + (f.total ?? 0), 0)
+  const avgFee = fees.length > 0 ? Math.round(totalRevenue / fees.length) : 0
+  const highestFee = fees.length > 0 ? Math.max(...fees.map((f: any) => f.total ?? 0)) : 0
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -74,7 +78,7 @@ export default function FeeStructurePage() {
           <Card key={f.id} className="relative">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
-                <CardTitle className="text-base">{f.class}</CardTitle>
+                <CardTitle className="text-base">{f.className || f.class || f.studentClass || f.level}</CardTitle>
                 <Badge variant="outline" className="bg-primary/10 text-primary border-primary/30">{f.session}</Badge>
               </div>
             </CardHeader>
@@ -124,7 +128,7 @@ export default function FeeStructurePage() {
             <TableBody>
               {fees.map((f) => (
                 <TableRow key={f.id}>
-                  <TableCell className="font-medium">{f.class}</TableCell>
+                  <TableCell className="font-medium">{f.className || f.class || f.studentClass || f.level}</TableCell>
                   <TableCell className="text-right">{fmt(f.tuition)}</TableCell>
                   <TableCell className="text-right hidden sm:table-cell">{fmt(f.boarding)}</TableCell>
                   <TableCell className="text-right hidden sm:table-cell">{fmt(f.development)}</TableCell>
@@ -146,8 +150,8 @@ export default function FeeStructurePage() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Edit Fee Structure — {editTarget?.class}</DialogTitle>
-            <DialogDescription>Update the fee components for {editTarget?.class}. All amounts in Nigerian Naira (₦).</DialogDescription>
+            <DialogTitle>Edit Fee Structure — {editTarget?.className || editTarget?.class || editTarget?.level}</DialogTitle>
+            <DialogDescription>Update the fee components for {editTarget?.className || editTarget?.class || editTarget?.level}. All amounts in Nigerian Naira (₦).</DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-2">
             {(["tuition", "boarding", "development", "books"] as const).map((field) => (

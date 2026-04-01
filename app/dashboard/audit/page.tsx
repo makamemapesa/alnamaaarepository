@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { api, getResults } from "@/lib/api-client"
 import {
   Search, Shield, LogIn, Edit2, Plus, Trash2, Settings, AlertTriangle, Download,
 } from "lucide-react"
@@ -18,20 +19,6 @@ import {
 
 type AuditAction = "LOGIN" | "CREATE" | "UPDATE" | "DELETE" | "EXPORT" | "SETTINGS"
 
-const auditLogs = [
-  { id: 1,  timestamp: "2026-02-27 08:12:34", user: "Ibrahim Farukaktas", role: "Admin",   action: "LOGIN"    as AuditAction, module: "Authentication", detail: "Successful login",                     ip: "192.168.1.1",  status: "success" as const },
-  { id: 2,  timestamp: "2026-02-27 08:25:11", user: "Ibrahim Farukaktas", role: "Admin",   action: "CREATE"   as AuditAction, module: "Students",       detail: "Registered student FISS/2026/047",     ip: "192.168.1.1",  status: "success" as const },
-  { id: 3,  timestamp: "2026-02-27 09:01:45", user: "Dr. Abubakar Sani",  role: "Teacher", action: "UPDATE"   as AuditAction, module: "Marks",          detail: "Entered SS 2A Mathematics marks",       ip: "192.168.1.22", status: "success" as const },
-  { id: 4,  timestamp: "2026-02-27 09:30:00", user: "Mrs. Ngozi Eze",     role: "Teacher", action: "LOGIN"    as AuditAction, module: "Authentication", detail: "Successful login",                     ip: "192.168.1.35", status: "success" as const },
-  { id: 5,  timestamp: "2026-02-27 10:05:22", user: "Ibrahim Farukaktas", role: "Admin",   action: "UPDATE"   as AuditAction, module: "Fee Structure",  detail: "Updated SS 3 tuition fee to ₦120,000",  ip: "192.168.1.1",  status: "success" as const },
-  { id: 6,  timestamp: "2026-02-27 10:45:00", user: "Unknown",             role: "—",       action: "LOGIN"    as AuditAction, module: "Authentication", detail: "Failed login attempt: wrong password",  ip: "41.58.20.100", status: "failed"  as const },
-  { id: 7,  timestamp: "2026-02-27 11:30:18", user: "Ibrahim Farukaktas", role: "Admin",   action: "EXPORT"   as AuditAction, module: "Reports",        detail: "Exported enrollment report (CSV)",     ip: "192.168.1.1",  status: "success" as const },
-  { id: 8,  timestamp: "2026-02-27 12:00:05", user: "Dr. Abubakar Sani",  role: "Teacher", action: "UPDATE"   as AuditAction, module: "Marks",          detail: "Entered SS 3A Mathematics marks",       ip: "192.168.1.22", status: "success" as const },
-  { id: 9,  timestamp: "2026-02-27 13:15:44", user: "Ibrahim Farukaktas", role: "Admin",   action: "DELETE"   as AuditAction, module: "Students",       detail: "Deactivated student FISS/2024/021",   ip: "192.168.1.1",  status: "success" as const },
-  { id: 10, timestamp: "2026-02-27 13:45:00", user: "Ibrahim Farukaktas", role: "Admin",   action: "CREATE"   as AuditAction, module: "Users",          detail: "Created teacher account for Mrs. Comfort Ade", ip: "192.168.1.1", status: "success" as const },
-  { id: 11, timestamp: "2026-02-27 14:22:31", user: "Mrs. Ngozi Eze",     role: "Teacher", action: "UPDATE"   as AuditAction, module: "Attendance",     detail: "Marked attendance for JSS 1A",         ip: "192.168.1.35", status: "success" as const },
-  { id: 12, timestamp: "2026-02-27 15:00:00", user: "Ibrahim Farukaktas", role: "Admin",   action: "SETTINGS" as AuditAction, module: "System",         detail: "Updated school session to 2025/2026",  ip: "192.168.1.1",  status: "success" as const },
-]
 
 const actionIcon = (action: AuditAction) => {
   if (action === "LOGIN")    return <LogIn   className="h-4 w-4 text-blue-500" />
@@ -52,9 +39,14 @@ const actionBadgeClass = (action: AuditAction) => {
 }
 
 export default function AuditPage() {
+  const [auditLogs, setAuditLogs] = useState<any[]>([])
   const [search, setSearch] = useState("")
   const [actionFilter, setActionFilter] = useState("all")
   const [moduleFilter, setModuleFilter] = useState("all")
+
+  useEffect(() => {
+    api.get("/api/audit/").then(r => setAuditLogs(getResults(r.data))).catch(() => {})
+  }, [])
 
   const modules = Array.from(new Set(auditLogs.map((l) => l.module)))
   const successCount = auditLogs.filter((l) => l.status === "success").length

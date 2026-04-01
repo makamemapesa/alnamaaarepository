@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { api, getResults } from "@/lib/api-client"
 import {
   Calendar,
   Clock,
@@ -38,7 +39,7 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { timetable, academicCalendar, classesExtended, subjects as subjectsList, teachersExtended } from "@/lib/mock-data"
+
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"] as const
 const PERIODS = [
@@ -69,8 +70,21 @@ const eventTypeColors: Record<string, string> = {
 export default function TimetablePage() {
   const [selectedClass, setSelectedClass] = useState("JSS 1A")
   const [addSlotOpen, setAddSlotOpen] = useState(false)
+  const [timetableData, setTimetableData] = useState<any[]>([])
+  const [calendarEvents, setCalendarEvents] = useState<any[]>([])
+  const [classes, setClasses] = useState<any[]>([])
+  const [subjectsData, setSubjectsData] = useState<any[]>([])
+  const [teachers, setTeachers] = useState<any[]>([])
 
-  const classTimetable = timetable.filter(t => t.class === selectedClass)
+  useEffect(() => {
+    api.get("/api/timetable/").then(r => setTimetableData(getResults(r.data))).catch(() => {})
+    api.get("/api/academic-calendar/").then(r => setCalendarEvents(getResults(r.data))).catch(() => {})
+    api.get("/api/classes/").then(r => setClasses(getResults(r.data))).catch(() => {})
+    api.get("/api/subjects/").then(r => setSubjectsData(getResults(r.data))).catch(() => {})
+    api.get("/api/teachers/").then(r => setTeachers(getResults(r.data))).catch(() => {})
+  }, [])
+
+  const classTimetable = timetableData.filter((t: any) => t.className === selectedClass || t.class === selectedClass)
 
   const getTimetableSlot = (day: string, period: number) => {
     return classTimetable.find(t => t.day === day && t.period === period)
@@ -107,7 +121,7 @@ export default function TimetablePage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {classesExtended.map((cls) => (
+                        {classes.map((cls: any) => (
                           <SelectItem key={cls.id} value={cls.name}>{cls.name}</SelectItem>
                         ))}
                       </SelectContent>
@@ -161,7 +175,7 @@ export default function TimetablePage() {
                             <Select>
                               <SelectTrigger><SelectValue placeholder="Select subject" /></SelectTrigger>
                               <SelectContent>
-                                {subjectsList.filter(s => s.status === "active").map((sub) => (
+                                {subjectsData.filter((s: any) => s.status === "active").map((sub: any) => (
                                   <SelectItem key={sub.id} value={sub.name}>{sub.name}</SelectItem>
                                 ))}
                               </SelectContent>
@@ -172,7 +186,7 @@ export default function TimetablePage() {
                             <Select>
                               <SelectTrigger><SelectValue placeholder="Select teacher" /></SelectTrigger>
                               <SelectContent>
-                                {teachersExtended.filter(t => t.status === "active").map((t) => (
+                                {teachers.filter((t: any) => t.status === "active").map((t: any) => (
                                   <SelectItem key={t.id} value={t.name}>{t.name}</SelectItem>
                                 ))}
                               </SelectContent>
@@ -225,8 +239,8 @@ export default function TimetablePage() {
                             <td key={day} className="p-1.5">
                               {slot ? (
                                 <div className={`rounded-lg border p-2.5 ${PERIOD_COLORS[periodIndex % PERIOD_COLORS.length]} transition-colors hover:opacity-90 cursor-pointer`}>
-                                  <p className="text-xs font-semibold leading-tight">{slot.subject}</p>
-                                  <p className="text-[10px] mt-1 opacity-80">{slot.teacher.split(" ").slice(-1)[0]}</p>
+                                  <p className="text-xs font-semibold leading-tight">{slot.subjectName || slot.subject}</p>
+                                  <p className="text-[10px] mt-1 opacity-80">{(slot.teacherName || slot.teacher || "").split(" ").slice(-1)[0]}</p>
                                   <div className="flex items-center gap-1 mt-1.5">
                                     <MapPin className="h-2.5 w-2.5 opacity-60" />
                                     <span className="text-[9px] opacity-70">{slot.room}</span>
@@ -288,7 +302,7 @@ export default function TimetablePage() {
 
                 {/* Timeline */}
                 <div className="flex flex-col gap-0">
-                  {academicCalendar.map((event, index) => (
+                  {calendarEvents.map((event: any, index: number) => (
                     <div key={event.id} className="flex gap-4">
                       {/* Timeline line */}
                       <div className="flex flex-col items-center">
@@ -297,7 +311,7 @@ export default function TimetablePage() {
                           event.type === "break" ? "bg-chart-3" :
                           event.type === "exam" ? "bg-destructive" : "bg-accent"
                         }`} />
-                        {index < academicCalendar.length - 1 && (
+                        {index < calendarEvents.length - 1 && (
                           <div className="w-0.5 flex-1 bg-border min-h-8" />
                         )}
                       </div>

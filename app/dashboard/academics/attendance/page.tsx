@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { api, getResults } from "@/lib/api-client"
 import {
   Search,
   Calendar,
@@ -45,15 +46,22 @@ import {
   CartesianGrid,
   Tooltip,
 } from "recharts"
-import { attendanceRecords, classesExtended } from "@/lib/mock-data"
+
 
 export default function AttendancePage() {
-  const [selectedDate, setSelectedDate] = useState("2026-02-27")
+  const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0])
   const [classFilter, setClassFilter] = useState("all")
+  const [attendanceData, setAttendanceData] = useState<any[]>([])
+  const [classes, setClasses] = useState<any[]>([])
 
-  const filteredRecords = attendanceRecords.filter((record) => {
+  useEffect(() => {
+    api.get("/api/attendance/").then(r => setAttendanceData(getResults(r.data))).catch(() => {})
+    api.get("/api/classes/").then(r => setClasses(getResults(r.data))).catch(() => {})
+  }, [])
+
+  const filteredRecords = attendanceData.filter((record) => {
     const matchesDate = record.date === selectedDate
-    const matchesClass = classFilter === "all" || record.class === classFilter
+    const matchesClass = classFilter === "all" || (record.className || record.class) === classFilter
     return matchesDate && matchesClass
   })
 
@@ -64,7 +72,7 @@ export default function AttendancePage() {
   const attendanceRate = totalStudents > 0 ? Math.round((totalPresent / totalStudents) * 100) : 0
 
   const chartData = filteredRecords.map((r) => ({
-    class: r.class,
+    class: r.className || r.class,
     present: r.present,
     absent: r.absent,
     late: r.late,
@@ -100,7 +108,7 @@ export default function AttendancePage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">All Classes</SelectItem>
-                      {classesExtended.map((cls) => (
+                      {classes.map((cls: any) => (
                         <SelectItem key={cls.id} value={cls.name}>{cls.name}</SelectItem>
                       ))}
                     </SelectContent>
@@ -225,11 +233,11 @@ export default function AttendancePage() {
                 </TableHeader>
                 <TableBody>
                   {filteredRecords.map((record) => {
-                    const rate = Math.round((record.present / record.totalStudents) * 100)
+                    const rate = record.totalStudents > 0 ? Math.round((record.present / record.totalStudents) * 100) : 0
                     return (
                       <TableRow key={record.id}>
                         <TableCell>
-                          <span className="text-sm font-semibold text-card-foreground">{record.class}</span>
+                          <span className="text-sm font-semibold text-card-foreground">{record.className || record.class}</span>
                         </TableCell>
                         <TableCell>
                           <span className="text-sm text-card-foreground">{record.totalStudents}</span>
@@ -257,12 +265,12 @@ export default function AttendancePage() {
                         </TableCell>
                         <TableCell className="hidden lg:table-cell">
                           <div className="flex flex-wrap gap-1">
-                            {record.absentStudents.map((student) => (
+                            {(record.absentStudents || []).map((student: string) => (
                               <Badge key={student} variant="outline" className="text-[10px] text-destructive border-destructive/30">
                                 {student}
                               </Badge>
                             ))}
-                            {record.lateStudents.map((student) => (
+                            {(record.lateStudents || []).map((student: string) => (
                               <Badge key={student} variant="outline" className="text-[10px] text-warning-foreground border-warning/30">
                                 {student} (Late)
                               </Badge>
@@ -289,7 +297,7 @@ export default function AttendancePage() {
                   <div className="flex flex-col gap-1 mt-1">
                     {filteredRecords.filter(r => (r.absent / r.totalStudents) > 0.05).map((r) => (
                       <p key={r.id} className="text-xs text-muted-foreground">
-                        <strong>{r.class}</strong> has {r.absent} absent students ({Math.round((r.absent / r.totalStudents) * 100)}% absent rate)
+                        <strong>{r.className || r.class}</strong> has {r.absent} absent students ({r.totalStudents > 0 ? Math.round((r.absent / r.totalStudents) * 100) : 0}% absent rate)
                       </p>
                     ))}
                   </div>

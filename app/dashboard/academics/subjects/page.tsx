@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { api, getResults } from "@/lib/api-client"
 import {
   Search,
   Plus,
@@ -57,9 +58,9 @@ import {
 import { Label } from "@/components/ui/label"
 import { Separator } from "@/components/ui/separator"
 import { Checkbox } from "@/components/ui/checkbox"
-import { subjects, departments, teachersExtended } from "@/lib/mock-data"
 
-function SubjectDetailDialog({ subject }: { subject: (typeof subjects)[number] }) {
+
+function SubjectDetailDialog({ subject }: { subject: any }) {
   return (
     <DialogContent className="sm:max-w-lg max-h-[85vh] overflow-y-auto">
       <DialogHeader>
@@ -94,7 +95,7 @@ function SubjectDetailDialog({ subject }: { subject: (typeof subjects)[number] }
           </div>
           <div className="flex flex-col gap-1 rounded-lg bg-muted/50 p-3">
             <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Classes</span>
-            <span className="text-sm font-semibold text-card-foreground">{subject.classesOffered.length} levels</span>
+            <span className="text-sm font-semibold text-card-foreground">{(subject.classesOffered || []).length} levels</span>
           </div>
         </div>
 
@@ -109,9 +110,9 @@ function SubjectDetailDialog({ subject }: { subject: (typeof subjects)[number] }
 
         <div className="flex flex-col gap-2">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Teachers Assigned ({subject.teachers.length})
+            Teachers Assigned ({(subject.teacherNames || subject.teachers || []).length})
           </span>
-          {subject.teachers.map((teacher) => (
+          {(subject.teacherNames || subject.teachers || []).map((teacher: string) => (
             <div key={teacher} className="flex items-center gap-3 rounded-lg border border-border p-3">
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10 text-xs font-medium text-primary">
                 {teacher.split(" ").map((n) => n[0]).join("")}
@@ -126,7 +127,7 @@ function SubjectDetailDialog({ subject }: { subject: (typeof subjects)[number] }
         <div className="flex flex-col gap-2">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Classes Offered</span>
           <div className="flex flex-wrap gap-2">
-            {subject.classesOffered.map((cls) => (
+            {(subject.classesOffered || []).map((cls: string) => (
               <Badge key={cls} variant="secondary" className="text-xs">{cls}</Badge>
             ))}
           </div>
@@ -141,9 +142,18 @@ export default function SubjectsPage() {
   const [deptFilter, setDeptFilter] = useState("all")
   const [typeFilter, setTypeFilter] = useState("all")
   const [addDialogOpen, setAddDialogOpen] = useState(false)
-  const [viewingSubject, setViewingSubject] = useState<(typeof subjects)[number] | null>(null)
+  const [viewingSubject, setViewingSubject] = useState<any>(null)
+  const [subjectsList, setSubjectsList] = useState<any[]>([])
+  const [teachers, setTeachers] = useState<any[]>([])
 
-  const filteredSubjects = subjects.filter((subject) => {
+  useEffect(() => {
+    api.get("/api/subjects/").then(r => setSubjectsList(getResults(r.data))).catch(() => {})
+    api.get("/api/teachers/").then(r => setTeachers(getResults(r.data))).catch(() => {})
+  }, [])
+
+  const departmentList = Array.from(new Set(subjectsList.map((s: any) => s.department).filter(Boolean))) as string[]
+
+  const filteredSubjects = subjectsList.filter((subject) => {
     const matchesSearch = subject.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       subject.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
       subject.department.toLowerCase().includes(searchQuery.toLowerCase())
@@ -152,9 +162,9 @@ export default function SubjectsPage() {
     return matchesSearch && matchesDept && matchesType
   })
 
-  const coreCount = subjects.filter((s) => s.type === "core").length
-  const electiveCount = subjects.filter((s) => s.type === "elective").length
-  const activeCount = subjects.filter((s) => s.status === "active").length
+  const coreCount = subjectsList.filter((s) => s.type === "core").length
+  const electiveCount = subjectsList.filter((s) => s.type === "elective").length
+  const activeCount = subjectsList.filter((s) => s.status === "active").length
 
   return (
     <>
@@ -172,7 +182,7 @@ export default function SubjectsPage() {
                 <BookOpen className="h-5 w-5 text-primary" />
               </div>
               <p className="text-2xl font-bold text-card-foreground" style={{ fontFamily: "var(--font-heading)" }}>
-                {subjects.length}
+                {subjectsList.length}
               </p>
               <p className="text-[11px] text-muted-foreground">Total Subjects</p>
             </CardContent>
@@ -205,7 +215,7 @@ export default function SubjectsPage() {
                 <Layers className="h-5 w-5 text-chart-4" />
               </div>
               <p className="text-2xl font-bold text-card-foreground" style={{ fontFamily: "var(--font-heading)" }}>
-                {departments.length}
+                {departmentList.length}
               </p>
               <p className="text-[11px] text-muted-foreground">Departments</p>
             </CardContent>
@@ -232,25 +242,24 @@ export default function SubjectsPage() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-              {departments.map((dept) => (
-                <div key={dept.id} className="flex items-start gap-3 rounded-lg border border-border p-4">
+              {departmentList.map((dept) => {
+                const subjectCount = subjectsList.filter((s: any) => s.department === dept).length
+                return (
+                <div key={dept} className="flex items-start gap-3 rounded-lg border border-border p-4">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10 text-xs font-bold text-primary shrink-0">
-                    {dept.name.substring(0, 3).toUpperCase()}
+                    {dept.substring(0, 3).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-card-foreground">{dept.name}</p>
-                    <p className="text-xs text-muted-foreground mt-0.5">HOD: {dept.hod}</p>
+                    <p className="text-sm font-semibold text-card-foreground">{dept}</p>
                     <div className="flex items-center gap-3 mt-2">
                       <span className="text-xs text-muted-foreground">
-                        <Users className="inline h-3 w-3 mr-1" />{dept.teacherCount} teachers
-                      </span>
-                      <span className="text-xs text-muted-foreground">
-                        <BookOpen className="inline h-3 w-3 mr-1" />{dept.subjectCount} subjects
+                        <BookOpen className="inline h-3 w-3 mr-1" />{subjectCount} subjects
                       </span>
                     </div>
                   </div>
                 </div>
-              ))}
+                )
+              })}
             </div>
           </CardContent>
         </Card>
@@ -295,8 +304,8 @@ export default function SubjectsPage() {
                           <Select>
                             <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
                             <SelectContent>
-                              {departments.map((dept) => (
-                                <SelectItem key={dept.id} value={dept.name}>{dept.name}</SelectItem>
+                              {departmentList.map((dept) => (
+                                <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -325,8 +334,8 @@ export default function SubjectsPage() {
                         <Select>
                           <SelectTrigger><SelectValue placeholder="Select teacher" /></SelectTrigger>
                           <SelectContent>
-                            {teachersExtended.filter(t => t.status === "active").map((teacher) => (
-                              <SelectItem key={teacher.id} value={teacher.id}>{teacher.name}</SelectItem>
+                            {teachers.filter((t: any) => t.status === "active").map((teacher: any) => (
+                              <SelectItem key={teacher.id} value={String(teacher.id)}>{teacher.name}</SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
@@ -371,8 +380,8 @@ export default function SubjectsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Departments</SelectItem>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept.id} value={dept.name}>{dept.name}</SelectItem>
+                  {departmentList.map((dept) => (
+                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -469,7 +478,7 @@ export default function SubjectsPage() {
 
             <div className="flex items-center justify-between mt-4">
               <p className="text-xs text-muted-foreground">
-                Showing {filteredSubjects.length} of {subjects.length} subjects
+                Showing {filteredSubjects.length} of {subjectsList.length} subjects
               </p>
             </div>
           </CardContent>

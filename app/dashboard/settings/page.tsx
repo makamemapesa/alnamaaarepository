@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { api } from "@/lib/api-client"
 import {
   School, BookOpen, Shield, Bell, Save, CheckCircle2,
 } from "lucide-react"
@@ -72,6 +73,11 @@ export default function SettingsPage() {
   })
 
   const save = (tab: string) => {
+    const payload = tab === "school" ? school
+      : tab === "academic" ? academic
+      : tab === "security" ? security
+      : notifSettings
+    api.patch("/api/settings/", payload).catch(() => {})
     setSaved(tab)
     setTimeout(() => setSaved(null), 3000)
   }

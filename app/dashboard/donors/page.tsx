@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { api, getResults } from "@/lib/api-client"
 import {
   Search, Plus, Edit2, Trash2, Heart, Users, DollarSign,
   CheckCircle2, Building2, User, Globe, Phone, Mail,
@@ -25,7 +26,6 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { Separator } from "@/components/ui/separator"
-import { donors as initialDonors } from "@/lib/mock-data"
 
 type Donor = {
   id: string
@@ -55,7 +55,7 @@ const emptyForm = {
 }
 
 export default function DonorsPage() {
-  const [donors, setDonors] = useState<Donor[]>(initialDonors as Donor[])
+  const [donors, setDonors] = useState<any[]>([])
   const [search, setSearch] = useState("")
   const [typeFilter, setTypeFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
@@ -63,7 +63,11 @@ export default function DonorsPage() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editTarget, setEditTarget] = useState<Donor | null>(null)
   const [form, setForm] = useState(emptyForm)
-  const [deleteTarget, setDeleteTarget] = useState<Donor | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<any>(null)
+
+  useEffect(() => {
+    api.get("/api/donors/").then(r => setDonors(getResults(r.data))).catch(() => {})
+  }, [])
 
   const filtered = donors.filter((d) => {
     const q = search.toLowerCase()
@@ -84,7 +88,7 @@ export default function DonorsPage() {
     setDialogOpen(true)
   }
 
-  const openEdit = (d: Donor) => {
+  const openEdit = (d: any) => {
     setEditTarget(d)
     setForm({ name: d.name, contact: d.contact, phone: d.phone, email: d.email, type: d.type, status: d.status })
     setDialogOpen(true)
@@ -92,20 +96,22 @@ export default function DonorsPage() {
 
   const handleSave = () => {
     if (editTarget) {
-      setDonors((prev) => prev.map((d) => d.id === editTarget.id ? { ...d, ...form } : d))
+      api.patch(`/api/donors/${editTarget.id}/`, form)
+        .then(r => setDonors((prev) => prev.map((d) => d.id === editTarget.id ? { ...d, ...r.data } : d)))
+        .catch(() => setDonors((prev) => prev.map((d) => d.id === editTarget.id ? { ...d, ...form } : d)))
     } else {
-      setDonors((prev) => [{
-        id: `DON${Date.now()}`,
-        ...form,
-        totalDonated: 0,
-        activeStudents: 0,
-      }, ...prev])
+      api.post("/api/donors/", form)
+        .then(r => setDonors((prev) => [r.data, ...prev]))
+        .catch(() => {})
     }
     setDialogOpen(false)
   }
 
   const handleDelete = () => {
-    if (deleteTarget) setDonors((prev) => prev.filter((d) => d.id !== deleteTarget.id))
+    if (deleteTarget) {
+      api.delete(`/api/donors/${deleteTarget.id}/`).catch(() => {})
+      setDonors((prev) => prev.filter((d) => d.id !== deleteTarget.id))
+    }
     setDeleteTarget(null)
   }
 

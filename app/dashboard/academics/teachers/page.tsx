@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { api, getResults } from "@/lib/api-client"
 import {
   Search,
   Plus,
@@ -59,9 +60,9 @@ import {
 } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { teachersExtended, departments, subjects, classesExtended } from "@/lib/mock-data"
 
-function TeacherDetailDialog({ teacher }: { teacher: (typeof teachersExtended)[number] }) {
+
+function TeacherDetailDialog({ teacher }: { teacher: any }) {
   return (
     <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
       <DialogHeader>
@@ -134,7 +135,7 @@ function TeacherDetailDialog({ teacher }: { teacher: (typeof teachersExtended)[n
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
               <BookOpen className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm text-card-foreground">Subjects: <strong>{teacher.subjects.join(", ")}</strong></span>
+              <span className="text-sm text-card-foreground">Subjects: <strong>{(teacher.subjectNames || teacher.subjects || []).join(", ")}</strong></span>
             </div>
             <div className="flex items-center gap-2">
               <GraduationCap className="h-4 w-4 text-muted-foreground" />
@@ -144,9 +145,9 @@ function TeacherDetailDialog({ teacher }: { teacher: (typeof teachersExtended)[n
             </div>
           </div>
           <div className="flex flex-col gap-1.5 mt-1">
-            <span className="text-xs text-muted-foreground">Assigned Classes ({teacher.assignedClasses.length})</span>
+              <span className="text-[11px] text-muted-foreground">Assigned Classes ({(teacher.assignedClassNames || teacher.assignedClasses || []).length})</span>
             <div className="flex flex-wrap gap-2">
-              {teacher.assignedClasses.map((cls) => (
+              {(teacher.assignedClassNames || teacher.assignedClasses || []).map((cls: string) => (
                 <Badge key={cls} variant="secondary" className="text-xs">{cls}</Badge>
               ))}
             </div>
@@ -166,7 +167,7 @@ function TeacherDetailDialog({ teacher }: { teacher: (typeof teachersExtended)[n
           </div>
           <div className="flex flex-col gap-1 rounded-lg bg-muted/50 p-3">
             <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">Monthly Salary</span>
-            <span className="text-sm font-semibold text-card-foreground">NGN {teacher.salary.toLocaleString()}</span>
+            <span className="text-sm font-semibold text-card-foreground">NGN {(teacher.salary ?? 0).toLocaleString()}</span>
           </div>
         </div>
       </div>
@@ -179,21 +180,30 @@ export default function TeachersPage() {
   const [deptFilter, setDeptFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
   const [addDialogOpen, setAddDialogOpen] = useState(false)
-  const [viewingTeacher, setViewingTeacher] = useState<(typeof teachersExtended)[number] | null>(null)
+  const [viewingTeacher, setViewingTeacher] = useState<any>(null)
+  const [teachers, setTeachers] = useState<any[]>([])
+  const [subjectsList, setSubjectsList] = useState<any[]>([])
 
-  const filteredTeachers = teachersExtended.filter((teacher) => {
+  useEffect(() => {
+    api.get("/api/teachers/").then(r => setTeachers(getResults(r.data))).catch(() => {})
+    api.get("/api/subjects/").then(r => setSubjectsList(getResults(r.data))).catch(() => {})
+  }, [])
+
+  const departmentList = Array.from(new Set(teachers.map((t: any) => t.department).filter(Boolean))) as string[]
+
+  const filteredTeachers = teachers.filter((teacher) => {
     const matchesSearch = teacher.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       teacher.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      teacher.subjects.some(s => s.toLowerCase().includes(searchQuery.toLowerCase()))
+      (teacher.subjectNames || teacher.subjects || []).some((s: string) => s.toLowerCase().includes(searchQuery.toLowerCase()))
     const matchesDept = deptFilter === "all" || teacher.department === deptFilter
     const matchesStatus = statusFilter === "all" || teacher.status === statusFilter
     return matchesSearch && matchesDept && matchesStatus
   })
 
-  const activeCount = teachersExtended.filter(t => t.status === "active").length
-  const onLeaveCount = teachersExtended.filter(t => t.status === "on_leave").length
-  const totalSalary = teachersExtended.reduce((sum, t) => sum + t.salary, 0)
-  const avgExperience = Math.round(teachersExtended.reduce((sum, t) => sum + t.yearsOfExperience, 0) / teachersExtended.length)
+  const activeCount = teachers.filter(t => t.status === "active").length
+  const onLeaveCount = teachers.filter(t => t.status === "on_leave").length
+  const totalSalary = teachers.reduce((sum: number, t: any) => sum + (t.salary ?? 0), 0)
+  const avgExperience = teachers.length > 0 ? Math.round(teachers.reduce((sum: number, t: any) => sum + (t.yearsOfExperience ?? 0), 0) / teachers.length) : 0
 
   return (
     <>
@@ -211,7 +221,7 @@ export default function TeachersPage() {
                 <Users className="h-5 w-5 text-primary" />
               </div>
               <p className="text-2xl font-bold text-card-foreground" style={{ fontFamily: "var(--font-heading)" }}>
-                {teachersExtended.length}
+                {teachers.length}
               </p>
               <p className="text-[11px] text-muted-foreground">Total Teachers</p>
             </CardContent>
@@ -328,8 +338,8 @@ export default function TeachersPage() {
                           <Select>
                             <SelectTrigger><SelectValue placeholder="Select dept" /></SelectTrigger>
                             <SelectContent>
-                              {departments.map((dept) => (
-                                <SelectItem key={dept.id} value={dept.name}>{dept.name}</SelectItem>
+                            {departmentList.map((dept) => (
+                                <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -339,7 +349,7 @@ export default function TeachersPage() {
                           <Select>
                             <SelectTrigger><SelectValue placeholder="Primary subject" /></SelectTrigger>
                             <SelectContent>
-                              {subjects.filter(s => s.status === "active").map((sub) => (
+                              {subjectsList.filter((s: any) => s.status === "active").map((sub: any) => (
                                 <SelectItem key={sub.id} value={sub.name}>{sub.name}</SelectItem>
                               ))}
                             </SelectContent>
@@ -379,8 +389,8 @@ export default function TeachersPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Departments</SelectItem>
-                  {departments.map((dept) => (
-                    <SelectItem key={dept.id} value={dept.name}>{dept.name}</SelectItem>
+                  {departmentList.map((dept) => (
+                    <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -430,15 +440,15 @@ export default function TeachersPage() {
                         <span className="text-sm text-card-foreground">{teacher.department}</span>
                       </TableCell>
                       <TableCell>
-                        <span className="text-sm text-card-foreground">{teacher.subjects.join(", ")}</span>
+                        <span className="text-sm text-card-foreground">{(teacher.subjectNames || teacher.subjects || []).join(", ")}</span>
                       </TableCell>
                       <TableCell className="hidden lg:table-cell">
                         <div className="flex flex-wrap gap-1">
-                          {teacher.assignedClasses.slice(0, 3).map((cls) => (
+                          {(teacher.assignedClassNames || teacher.assignedClasses || []).slice(0, 3).map((cls: string) => (
                             <Badge key={cls} variant="secondary" className="text-[10px]">{cls}</Badge>
                           ))}
-                          {teacher.assignedClasses.length > 3 && (
-                            <Badge variant="secondary" className="text-[10px]">+{teacher.assignedClasses.length - 3}</Badge>
+                          {(teacher.assignedClassNames || teacher.assignedClasses || []).length > 3 && (
+                            <Badge variant="secondary" className="text-[10px]">+{(teacher.assignedClassNames || teacher.assignedClasses || []).length - 3}</Badge>
                           )}
                         </div>
                       </TableCell>
@@ -487,7 +497,7 @@ export default function TeachersPage() {
 
             <div className="flex items-center justify-between mt-4">
               <p className="text-xs text-muted-foreground">
-                Showing {filteredTeachers.length} of {teachersExtended.length} teachers
+                Showing {filteredTeachers.length} of {teachers.length} teachers
               </p>
             </div>
           </CardContent>

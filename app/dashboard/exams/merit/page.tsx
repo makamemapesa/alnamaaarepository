@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { api, getResults } from "@/lib/api-client"
 import { Trophy, Medal, Award, Download, Search } from "lucide-react"
 import { DashboardHeader } from "@/components/dashboard-header"
 import { Button } from "@/components/ui/button"
@@ -16,20 +17,6 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Progress } from "@/components/ui/progress"
 
-const meritList = [
-  { id: "M001",  name: "Aisha Garba",       regNo: "FISS/2024/011", class: "JSS 2A", average: 93.00, grade: "A+", position: 1,  math: 96, english: 92, science: 90, total: 372 },
-  { id: "M002",  name: "David Adamu",        regNo: "FISS/2024/004", class: "SS 3A",  average: 90.00, grade: "A+", position: 2,  math: 92, english: 88, science: 95, total: 360 },
-  { id: "M003",  name: "Mohammed Ali",       regNo: "FISS/2024/006", class: "SS 1A",  average: 88.75, grade: "A",  position: 3,  math: 88, english: 90, science: 85, total: 355 },
-  { id: "M004",  name: "Peter Okoro",        regNo: "FISS/2024/008", class: "SS 2A",  average: 84.75, grade: "A",  position: 4,  math: 88, english: 76, science: 91, total: 339 },
-  { id: "M005",  name: "Amina Hassan",       regNo: "FISS/2024/001", class: "JSS 3A", average: 85.75, grade: "A",  position: 5,  math: 85, english: 78, science: 92, total: 343 },
-  { id: "M006",  name: "Tunde Fashola",      regNo: "FISS/2024/012", class: "SS 3B",  average: 79.50, grade: "B+", position: 6,  math: 79, english: 82, science: 77, total: 318 },
-  { id: "M007",  name: "Grace Nwosu",        regNo: "FISS/2024/005", class: "JSS 2B", average: 78.75, grade: "B+", position: 7,  math: 78, english: 82, science: 75, total: 315 },
-  { id: "M008",  name: "Khadija Bello",      regNo: "FISS/2024/009", class: "JSS 1A", average: 73.75, grade: "B",  position: 8,  math: 74, english: 80, science: 69, total: 295 },
-  { id: "M009",  name: "Emmanuel Obi",       regNo: "FISS/2024/002", class: "SS 2B",  average: 71.25, grade: "B",  position: 9,  math: 72, english: 65, science: 78, total: 285 },
-  { id: "M010",  name: "Fatima Yusuf",       regNo: "FISS/2024/003", class: "JSS 1A", average: 61.25, grade: "C",  position: 10, math: 60, english: 55, science: 68, total: 245 },
-  { id: "M011",  name: "Sarah Johnson",      regNo: "FISS/2024/007", class: "JSS 3A", average: 53.75, grade: "D",  position: 11, math: 55, english: 58, science: 50, total: 215 },
-  { id: "M012",  name: "Chukwuemeka Ike",    regNo: "FISS/2024/010", class: "SS 1B",  average: 43.75, grade: "F",  position: 12, math: 42, english: 38, science: 50, total: 175 },
-]
 
 const positionIcon = (pos: number) => {
   if (pos === 1) return <Trophy className="h-5 w-5 text-yellow-500" />
@@ -47,20 +34,28 @@ const gradeColor = (grade: string) => {
 }
 
 export default function MeritListPage() {
+  const [meritList, setMeritList] = useState<any[]>([])
   const [search, setSearch] = useState("")
   const [classFilter, setClassFilter] = useState("all")
+
+  useEffect(() => {
+    api.get("/api/exam-results/?ordering=-average").then(r => {
+      const data = getResults(r.data)
+      setMeritList(data.map((s: any, i: number) => ({ ...s, position: s.position ?? i + 1, name: s.studentName || s.name })))
+    }).catch(() => {})
+  }, [])
 
   const filtered = meritList.filter((s) => {
     const q = search.toLowerCase()
     return (
       (s.name.toLowerCase().includes(q) || s.regNo.toLowerCase().includes(q)) &&
-      (classFilter === "all" || s.class === classFilter)
+      (classFilter === "all" || (s.className || s.class) === classFilter)
     )
   })
 
-  const uniqueClasses = Array.from(new Set(meritList.map((s) => s.class))).sort()
+  const uniqueClasses = Array.from(new Set(meritList.map((s) => s.className || s.class).filter(Boolean))).sort() as string[]
   const topThree = meritList.slice(0, 3)
-  const avgScore = (meritList.reduce((sum, s) => sum + s.average, 0) / meritList.length).toFixed(1)
+  const avgScore = meritList.length > 0 ? (meritList.reduce((sum, s) => sum + (s.average ?? 0), 0) / meritList.length).toFixed(1) : "0.0"
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -77,12 +72,12 @@ export default function MeritListPage() {
               </div>
               <Avatar className="h-14 w-14">
                 <AvatarFallback className="bg-primary/10 text-primary text-lg font-bold">
-                  {s.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                  {s.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
                 </AvatarFallback>
               </Avatar>
               <div className="text-center">
                 <p className="font-semibold">{s.name}</p>
-                <p className="text-sm text-muted-foreground">{s.class}</p>
+                <p className="text-sm text-muted-foreground">{s.className || s.class}</p>
               </div>
               <span className={`text-2xl font-bold ${gradeColor(s.grade)}`}>{s.average.toFixed(1)}%</span>
               <Badge variant="outline" className={s.position === 1 ? "border-yellow-400 text-yellow-700 bg-yellow-500/10" : ""}>Grade {s.grade}</Badge>
@@ -157,7 +152,7 @@ export default function MeritListPage() {
                     <div className="flex items-center gap-3">
                       <Avatar className="h-8 w-8">
                         <AvatarFallback className="bg-primary/10 text-primary text-xs font-semibold">
-                          {s.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                          {s.name.split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
                         </AvatarFallback>
                       </Avatar>
                       <div>
@@ -166,7 +161,7 @@ export default function MeritListPage() {
                       </div>
                     </div>
                   </TableCell>
-                  <TableCell><Badge variant="outline">{s.class}</Badge></TableCell>
+                  <TableCell><Badge variant="outline">{s.className || s.class}</Badge></TableCell>
                   <TableCell className="hidden md:table-cell">{s.math}</TableCell>
                   <TableCell className="hidden md:table-cell">{s.english}</TableCell>
                   <TableCell className="hidden md:table-cell">{s.science}</TableCell>

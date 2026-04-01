@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { api } from "@/lib/api-client"
 import {
   Users, DollarSign, TrendingUp, BookOpen, Download, BarChart2,
 } from "lucide-react"
@@ -13,21 +14,26 @@ import {
   ResponsiveContainer, Legend,
 } from "recharts"
 import {
-  enrollmentData, revenueData, performanceData, attendanceData, stats,
+  enrollmentData, revenueData, performanceData, attendanceData,
 } from "@/lib/mock-data"
 
 const fmt = (n: number) =>
-  n >= 1_000_000 ? `₦${(n / 1_000_000).toFixed(1)}M` : `₦${n.toLocaleString()}`
-
-const statCards = [
-  { label: "Total Students",    value: stats.totalStudents.toLocaleString(), icon: Users,      color: "text-primary",    bg: "bg-primary/10",     sub: "+156 new admissions" },
-  { label: "Total Revenue",     value: fmt(stats.totalRevenue),              icon: DollarSign,  color: "text-accent",     bg: "bg-accent/10",      sub: "This academic year" },
-  { label: "Pass Rate",         value: `${stats.passRate}%`,                 icon: TrendingUp,  color: "text-blue-600",   bg: "bg-blue-500/10",    sub: "Across all classes" },
-  { label: "Attendance Rate",   value: `${stats.attendanceRate}%`,           icon: BookOpen,    color: "text-orange-600", bg: "bg-orange-500/10",  sub: "Weekly average" },
-]
+  n >= 1_000_000 ? `₦${(n / 1_000_000).toFixed(1)}M` : `₦${(n ?? 0).toLocaleString()}`
 
 export default function ReportsPage() {
   const [tab, setTab] = useState("enrollment")
+  const [stats, setStats] = useState({ totalStudents: 0, totalRevenue: 0, passRate: 0, attendanceRate: 0 })
+
+  useEffect(() => {
+    api.get("/api/dashboard/stats/").then(r => setStats(r.data)).catch(() => {})
+  }, [])
+
+  const statCards = [
+    { label: "Total Students",  value: stats.totalStudents.toLocaleString(), icon: Users,      color: "text-primary",    bg: "bg-primary/10",     sub: "+156 new admissions" },
+    { label: "Total Revenue",   value: fmt(stats.totalRevenue),              icon: DollarSign,  color: "text-accent",     bg: "bg-accent/10",      sub: "This academic year" },
+    { label: "Pass Rate",       value: `${stats.passRate}%`,                 icon: TrendingUp,  color: "text-blue-600",   bg: "bg-blue-500/10",    sub: "Across all classes" },
+    { label: "Attendance Rate", value: `${stats.attendanceRate}%`,           icon: BookOpen,    color: "text-orange-600", bg: "bg-orange-500/10",  sub: "Weekly average" },
+  ]
 
   return (
     <div className="flex flex-col gap-6 p-4 md:p-6">
@@ -127,8 +133,7 @@ export default function ReportsPage() {
           </Card>
           <div className="mt-4 grid grid-cols-2 gap-4">
             {[
-              { label: "Total Collected", value: fmt(stats.totalRevenue),   color: "text-primary" },
-              { label: "Still Pending",   value: fmt(stats.pendingFees),    color: "text-destructive" },
+              { label: "Total Collected", value: fmt(stats.totalRevenue), color: "text-primary" },
             ].map(({ label, value, color }) => (
               <Card key={label}>
                 <CardContent className="pt-4 pb-4 text-center">
