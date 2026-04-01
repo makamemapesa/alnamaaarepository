@@ -35,6 +35,72 @@ export default function RegisterStudentPage() {
   }, [])
   const [donorNumber, setDonorNumber] = useState("")
   const [isOrphan, setIsOrphan] = useState(false)
+  const [form, setForm] = useState({
+    firstName: "", lastName: "", middleName: "", dateOfBirth: "",
+    gender: "", bloodGroup: "", religion: "", stateOfOrigin: "", address: "",
+    parentName: "", relationship: "", parentPhone: "", parentEmail: "",
+    occupation: "", officeAddress: "", homeAddress: "",
+    emergencyName: "", emergencyPhone: "",
+    admissionClass: "", academicSession: "2025-2026", admissionDate: "",
+    studentType: "", previousSchool: "", previousClass: "", regNo: "",
+  })
+  const [files, setFiles] = useState<Record<string, File | null>>({})
+  const [submitting, setSubmitting] = useState(false)
+  const [classes, setClasses] = useState<any[]>([])
+
+  useEffect(() => {
+    api.get("/api/classes/").then(r => setClasses(getResults(r.data))).catch(() => {})
+  }, [])
+
+  const setField = (key: string, value: string) => setForm(prev => ({ ...prev, [key]: value }))
+
+  const DOCS = [
+    { key: "passport", label: "Passport Photograph *", accept: "image/*" },
+    { key: "birth_certificate", label: "Birth Certificate *", accept: ".pdf,image/*" },
+    { key: "school_report", label: "Previous School Report", accept: ".pdf,image/*" },
+    { key: "transfer_certificate", label: "Transfer Certificate", accept: ".pdf,image/*" },
+    { key: "medical_certificate", label: "Medical Certificate", accept: ".pdf,image/*" },
+    { key: "other", label: "Other Documents", accept: ".pdf,image/*" },
+  ]
+
+  const handleSubmit = async () => {
+    setSubmitting(true)
+    try {
+      const payload: any = {
+        firstName: form.firstName, lastName: form.lastName, middleName: form.middleName,
+        dateOfBirth: form.dateOfBirth, gender: form.gender, bloodGroup: form.bloodGroup,
+        religion: form.religion, stateOfOrigin: form.stateOfOrigin, address: form.address,
+        isOrphan,
+        parentName: form.parentName, relationship: form.relationship,
+        parentPhone: form.parentPhone, parentEmail: form.parentEmail,
+        occupation: form.occupation, officeAddress: form.officeAddress,
+        homeAddress: form.homeAddress, emergencyContactName: form.emergencyName,
+        emergencyContactPhone: form.emergencyPhone,
+        currentClass: form.admissionClass, academicSession: form.academicSession,
+        admissionDate: form.admissionDate, studentType: form.studentType,
+        previousSchool: form.previousSchool, previousClass: form.previousClass,
+        regNo: form.regNo,
+      }
+      if (hasDonor && selectedDonor) {
+        payload.donor = Number(selectedDonor)
+        payload.donorNumber = donorNumber
+      }
+      const res = await api.post("/api/students/", payload)
+      const studentId = res.data.id
+      for (const [key, file] of Object.entries(files)) {
+        if (!file) continue
+        const fd = new FormData()
+        fd.append("document_type", key)
+        fd.append("file", file)
+        await api.post(`/api/students/${studentId}/upload_document/`, fd)
+      }
+      router.push("/dashboard/students")
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setSubmitting(false)
+    }
+  }
 
   return (
     <>
@@ -90,23 +156,23 @@ export default function RegisterStudentPage() {
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div className="flex flex-col gap-2">
                   <Label>First Name *</Label>
-                  <Input placeholder="Enter first name" />
+                  <Input placeholder="Enter first name" value={form.firstName} onChange={e => setField("firstName", e.target.value)} />
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label>Last Name *</Label>
-                  <Input placeholder="Enter last name" />
+                  <Input placeholder="Enter last name" value={form.lastName} onChange={e => setField("lastName", e.target.value)} />
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label>Middle Name</Label>
-                  <Input placeholder="Enter middle name" />
+                  <Input placeholder="Enter middle name" value={form.middleName} onChange={e => setField("middleName", e.target.value)} />
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label>Date of Birth *</Label>
-                  <Input type="date" />
+                  <Input type="date" value={form.dateOfBirth} onChange={e => setField("dateOfBirth", e.target.value)} />
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label>Gender *</Label>
-                  <Select>
+                  <Select value={form.gender} onValueChange={v => setField("gender", v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select gender" />
                     </SelectTrigger>
@@ -118,7 +184,7 @@ export default function RegisterStudentPage() {
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label>Blood Group</Label>
-                  <Select>
+                  <Select value={form.bloodGroup} onValueChange={v => setField("bloodGroup", v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select blood group" />
                     </SelectTrigger>
@@ -131,7 +197,7 @@ export default function RegisterStudentPage() {
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label>Religion</Label>
-                  <Select>
+                  <Select value={form.religion} onValueChange={v => setField("religion", v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select religion" />
                     </SelectTrigger>
@@ -144,11 +210,11 @@ export default function RegisterStudentPage() {
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label>State of Origin</Label>
-                  <Input placeholder="Enter state of origin" />
+                  <Input placeholder="Enter state of origin" value={form.stateOfOrigin} onChange={e => setField("stateOfOrigin", e.target.value)} />
                 </div>
                 <div className="flex flex-col gap-2 md:col-span-2">
                   <Label>Residential Address *</Label>
-                  <Textarea placeholder="Enter full address" rows={3} />
+                  <Textarea placeholder="Enter full address" rows={3} value={form.address} onChange={e => setField("address", e.target.value)} />
                 </div>
                 <div className="flex flex-col gap-2 md:col-span-2">
                   <Label>Orphan Status</Label>
@@ -185,11 +251,11 @@ export default function RegisterStudentPage() {
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div className="flex flex-col gap-2">
                   <Label>Full Name *</Label>
-                  <Input placeholder="Enter parent/guardian name" />
+                  <Input placeholder="Enter parent/guardian name" value={form.parentName} onChange={e => setField("parentName", e.target.value)} />
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label>Relationship *</Label>
-                  <Select>
+                  <Select value={form.relationship} onValueChange={v => setField("relationship", v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select relationship" />
                     </SelectTrigger>
@@ -202,23 +268,23 @@ export default function RegisterStudentPage() {
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label>Phone Number *</Label>
-                  <Input type="tel" placeholder="+234 XXX XXX XXXX" />
+                  <Input type="tel" placeholder="+234 XXX XXX XXXX" value={form.parentPhone} onChange={e => setField("parentPhone", e.target.value)} />
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label>Email Address</Label>
-                  <Input type="email" placeholder="Enter email" />
+                  <Input type="email" placeholder="Enter email" value={form.parentEmail} onChange={e => setField("parentEmail", e.target.value)} />
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label>Occupation</Label>
-                  <Input placeholder="Enter occupation" />
+                  <Input placeholder="Enter occupation" value={form.occupation} onChange={e => setField("occupation", e.target.value)} />
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label>Office Address</Label>
-                  <Input placeholder="Enter office address" />
+                  <Input placeholder="Enter office address" value={form.officeAddress} onChange={e => setField("officeAddress", e.target.value)} />
                 </div>
                 <div className="flex flex-col gap-2 md:col-span-2">
                   <Label>Home Address</Label>
-                  <Textarea placeholder="Enter home address" rows={3} />
+                  <Textarea placeholder="Enter home address" rows={3} value={form.homeAddress} onChange={e => setField("homeAddress", e.target.value)} />
                 </div>
               </div>
 
@@ -228,11 +294,11 @@ export default function RegisterStudentPage() {
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div className="flex flex-col gap-2">
                   <Label>Emergency Contact Name</Label>
-                  <Input placeholder="Enter name" />
+                  <Input placeholder="Enter name" value={form.emergencyName} onChange={e => setField("emergencyName", e.target.value)} />
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label>Emergency Contact Phone</Label>
-                  <Input type="tel" placeholder="+234 XXX XXX XXXX" />
+                  <Input type="tel" placeholder="+234 XXX XXX XXXX" value={form.emergencyPhone} onChange={e => setField("emergencyPhone", e.target.value)} />
                 </div>
               </div>
 
@@ -255,20 +321,20 @@ export default function RegisterStudentPage() {
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <div className="flex flex-col gap-2">
                   <Label>Admission Class *</Label>
-                  <Select>
+                  <Select value={form.admissionClass} onValueChange={v => setField("admissionClass", v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select class" />
                     </SelectTrigger>
                     <SelectContent>
-                      {["JSS 1A", "JSS 1B", "JSS 2A", "JSS 2B", "JSS 3A", "JSS 3B", "SS 1A", "SS 1B", "SS 2A", "SS 2B", "SS 3A", "SS 3B"].map((cls) => (
-                        <SelectItem key={cls} value={cls}>{cls}</SelectItem>
+                      {classes.map((cls: any) => (
+                        <SelectItem key={cls.id} value={String(cls.id)}>{cls.name}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label>Academic Session *</Label>
-                  <Select>
+                  <Select value={form.academicSession} onValueChange={v => setField("academicSession", v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select session" />
                     </SelectTrigger>
@@ -280,11 +346,11 @@ export default function RegisterStudentPage() {
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label>Admission Date *</Label>
-                  <Input type="date" />
+                  <Input type="date" value={form.admissionDate} onChange={e => setField("admissionDate", e.target.value)} />
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label>Student Type *</Label>
-                  <Select>
+                  <Select value={form.studentType} onValueChange={v => setField("studentType", v)}>
                     <SelectTrigger>
                       <SelectValue placeholder="Select type" />
                     </SelectTrigger>
@@ -296,15 +362,15 @@ export default function RegisterStudentPage() {
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label>Previous School</Label>
-                  <Input placeholder="Enter previous school name" />
+                  <Input placeholder="Enter previous school name" value={form.previousSchool} onChange={e => setField("previousSchool", e.target.value)} />
                 </div>
                 <div className="flex flex-col gap-2">
                   <Label>Previous Class</Label>
-                  <Input placeholder="Enter previous class" />
+                  <Input placeholder="Enter previous class" value={form.previousClass} onChange={e => setField("previousClass", e.target.value)} />
                 </div>
                 <div className="flex flex-col gap-2 md:col-span-2">
                   <Label>Registration Number *</Label>
-                  <Input placeholder="e.g. FISS/2026/157" />
+                  <Input placeholder="e.g. FISS/2026/157" value={form.regNo} onChange={e => setField("regNo", e.target.value)} />
                   <p className="text-xs text-muted-foreground">Enter the student&apos;s registration number manually.</p>
                 </div>
               </div>
@@ -386,25 +452,37 @@ export default function RegisterStudentPage() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                {[
-                  { label: "Passport Photograph *", accept: "image/*" },
-                  { label: "Birth Certificate *", accept: ".pdf,image/*" },
-                  { label: "Previous School Report", accept: ".pdf,image/*" },
-                  { label: "Transfer Certificate", accept: ".pdf,image/*" },
-                  { label: "Medical Certificate", accept: ".pdf,image/*" },
-                  { label: "Other Documents", accept: ".pdf,image/*" },
-                ].map((doc) => (
-                  <div key={doc.label} className="flex flex-col gap-2">
+                {DOCS.map((doc) => (
+                  <div key={doc.key} className="flex flex-col gap-2">
                     <Label>{doc.label}</Label>
-                    <div className="flex items-center justify-center rounded-lg border-2 border-dashed border-border p-6 hover:border-primary/30 transition-colors cursor-pointer">
+                    <label
+                      htmlFor={`file-${doc.key}`}
+                      className="flex items-center justify-center rounded-lg border-2 border-dashed border-border p-6 hover:border-primary/30 transition-colors cursor-pointer"
+                    >
                       <div className="flex flex-col items-center gap-2 text-center">
-                        <Upload className="h-8 w-8 text-muted-foreground" />
-                        <div>
-                          <p className="text-xs font-medium text-muted-foreground">Click to upload</p>
-                          <p className="text-[10px] text-muted-foreground/60">PNG, JPG, PDF up to 5MB</p>
-                        </div>
+                        {files[doc.key] ? (
+                          <>
+                            <Upload className="h-8 w-8 text-accent" />
+                            <p className="text-xs font-medium text-foreground truncate max-w-[160px]">{files[doc.key]!.name}</p>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-8 w-8 text-muted-foreground" />
+                            <div>
+                              <p className="text-xs font-medium text-muted-foreground">Click to upload</p>
+                              <p className="text-[10px] text-muted-foreground/60">PNG, JPG, PDF up to 5MB</p>
+                            </div>
+                          </>
+                        )}
                       </div>
-                    </div>
+                    </label>
+                    <input
+                      type="file"
+                      id={`file-${doc.key}`}
+                      accept={doc.accept}
+                      className="hidden"
+                      onChange={e => setFiles(prev => ({ ...prev, [doc.key]: e.target.files?.[0] ?? null }))}
+                    />
                   </div>
                 ))}
               </div>
@@ -420,8 +498,8 @@ export default function RegisterStudentPage() {
 
               <div className="mt-6 flex justify-between">
                 <Button variant="outline" onClick={() => setStep(3)}>Previous</Button>
-                <Button className="bg-accent text-accent-foreground hover:bg-accent/90">
-                  <Save className="mr-2 h-4 w-4" /> Complete Registration
+                <Button className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={handleSubmit} disabled={submitting}>
+                  <Save className="mr-2 h-4 w-4" /> {submitting ? "Registering..." : "Complete Registration"}
                 </Button>
               </div>
             </CardContent>

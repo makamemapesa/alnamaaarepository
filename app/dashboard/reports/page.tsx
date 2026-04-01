@@ -13,19 +13,26 @@ import {
   LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend,
 } from "recharts"
-import {
-  enrollmentData, revenueData, performanceData, attendanceData,
-} from "@/lib/mock-data"
-
 const fmt = (n: number) =>
   n >= 1_000_000 ? `₦${(n / 1_000_000).toFixed(1)}M` : `₦${(n ?? 0).toLocaleString()}`
 
 export default function ReportsPage() {
   const [tab, setTab] = useState("enrollment")
   const [stats, setStats] = useState({ totalStudents: 0, totalRevenue: 0, passRate: 0, attendanceRate: 0 })
+  const [enrollmentData, setEnrollmentData] = useState<any[]>([])
+  const [revenueData, setRevenueData] = useState<any[]>([])
+  const [performanceData, setPerformanceData] = useState<any[]>([])
+  const [attendanceData, setAttendanceData] = useState<any[]>([])
 
   useEffect(() => {
     api.get("/api/dashboard/stats/").then(r => setStats(r.data)).catch(() => {})
+    api.get("/api/reports/charts/").then(r => {
+      const d = r.data
+      setEnrollmentData(d.enrollmentData || [])
+      setRevenueData(d.revenueData || [])
+      setPerformanceData(d.performanceData || [])
+      setAttendanceData(d.attendanceData || [])
+    }).catch(() => {})
   }, [])
 
   const statCards = [

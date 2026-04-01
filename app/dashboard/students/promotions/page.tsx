@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { api, getResults } from "@/lib/api-client"
+import { exportCSV } from "@/lib/utils"
 import {
   ArrowUpCircle,
   CheckCircle2,
@@ -66,15 +67,19 @@ const gradeColor = (grade: string) => {
 
 export default function PromotionsPage() {
   const [promotionStudents, setPromotionStudents] = useState<any[]>([])
+  const [classes, setClasses] = useState<any[]>([])
   const [searchQuery, setSearchQuery] = useState("")
   const [classFilter, setClassFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
   const [selectedStudent, setSelectedStudent] = useState<any>(null)
+  const [selectedNextClassId, setSelectedNextClassId] = useState("")
   const [confirmOpen, setConfirmOpen] = useState(false)
   const [bulkConfirmOpen, setBulkConfirmOpen] = useState(false)
   const [promoted, setPromoted] = useState<(string | number)[]>([])
+  const [promoting, setPromoting] = useState(false)
 
   useEffect(() => {
+    api.get("/api/classes/").then(r => setClasses(getResults(r.data))).catch(() => {})
     api.get("/api/students/?page_size=500").then(r => {
       const students = getResults(r.data)
       setPromotionStudents(students.map((s: any) => ({
@@ -111,18 +116,31 @@ export default function PromotionsPage() {
   const uniqueClasses = Array.from(new Set(promotionStudents.map((s) => s.currentClass))).sort()
 
   const handlePromote = () => {
-    if (!selectedStudent) return
-    setPromoted((prev) => [...prev, selectedStudent.id])
-    setConfirmOpen(false)
-    setSelectedStudent(null)
+    if (!selectedStudent || !selectedNextClassId) return
+    setPromoting(true)
+    api.post(`/api/students/${selectedStudent.id}/promote/`, { new_class: Number(selectedNextClassId) })
+      .then(() => {
+        setPromoted((prev) => [...prev, selectedStudent.id])
+        setConfirmOpen(false)
+        setSelectedStudent(null)
+        setSelectedNextClassId("")
+      })
+      .catch(() => {})
+      .finally(() => setPromoting(false))
   }
 
   const handleBulkPromote = () => {
-    const eligibleIds = promotionStudents
-      .filter((s) => s.status === "eligible")
-      .map((s) => s.id)
-    setPromoted(eligibleIds)
-    setBulkConfirmOpen(false)
+    const eligibleStudents = promotionStudents.filter((s) => s.status === "eligible" && !promoted.includes(s.id))
+    const promises = eligibleStudents.map((s) => {
+      const nextCls = classes.find((c) => c.id !== s.studentClassId)
+      const classId = nextCls?.id
+      if (!classId) return Promise.resolve()
+      return api.post(`/api/students/${s.id}/promote/`, { new_class: classId }).catch(() => {})
+    })
+    Promise.all(promises).then(() => {
+      setPromoted(eligibleStudents.map((s) => s.id))
+      setBulkConfirmOpen(false)
+    })
   }
 
   return (
@@ -193,7 +211,7 @@ export default function PromotionsPage() {
               <CardDescription>All students pending promotion review for Term 2 ending</CardDescription>
             </div>
             <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="gap-1">
+              <Button variant="outline" size="sm" className="gap-1" onClick={() => exportCSV(filtered, "promotions.csv")}>
                 <Download className="h-4 w-4" />
                 Export
               </Button>
@@ -375,41 +393,49 @@ export default function PromotionsPage() {
       </Card>
 
       {/* Single promote dialog */}
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <Dialog open={confirmOpen} onOpenChange={(o) => { setConfirmOpen(o); if (!o) setSelectedNextClassId("") }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Confirm Promotion</DialogTitle>
             <DialogDescription>
-              Are you sure you want to promote{" "}
-              <strong>{selectedStudent?.name}</strong> from{" "}
-              <strong>{selectedStudent?.currentClass}</strong> to{" "}
-              <strong>{selectedStudent?.nextClass}</strong>?
-              This action will be recorded in the student&apos;s academic history.
+              Select the new class for <strong>{selectedStudent?.name}</strong> (currently in{" "}
+              <strong>{selectedStudent?.currentClass}</strong>).
             </DialogDescription>
           </DialogHeader>
           {selectedStudent && (
-            <div className="rounded-lg border bg-muted/40 p-4 text-sm space-y-1">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Academic Average</span>
-                <span className={gradeColor(selectedStudent.grade)}>
-                  {selectedStudent.average.toFixed(1)}% — Grade {selectedStudent.grade}
-                </span>
+            <div className="space-y-4">
+              <div className="flex flex-col gap-2">
+                <label className="text-sm font-medium">Promote to Class *</label>
+                <Select value={selectedNextClassId} onValueChange={setSelectedNextClassId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select new class" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {classes.filter((c) => c.name !== selectedStudent.currentClass).map((c) => (
+                      <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Attendance Rate</span>
-                <span>{selectedStudent.attendance}%</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">Fee Status</span>
-                <span className="capitalize">{selectedStudent.feeStatus}</span>
+              <div className="rounded-lg border bg-muted/40 p-4 text-sm space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Academic Average</span>
+                  <span className={gradeColor(selectedStudent.grade)}>
+                    {selectedStudent.average.toFixed(1)}% — Grade {selectedStudent.grade}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Fee Status</span>
+                  <span className="capitalize">{selectedStudent.feeStatus}</span>
+                </div>
               </div>
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setConfirmOpen(false)}>Cancel</Button>
-            <Button onClick={handlePromote}>
+            <Button onClick={handlePromote} disabled={!selectedNextClassId || promoting}>
               <ArrowUpCircle className="mr-2 h-4 w-4" />
-              Confirm Promotion
+              {promoting ? "Promoting..." : "Confirm Promotion"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -40,12 +40,6 @@ import {
   Cell,
 } from "recharts"
 import { DashboardHeader } from "@/components/dashboard-header"
-import {
-  enrollmentData,
-  revenueData,
-  performanceData,
-  attendanceData,
-} from "@/lib/mock-data"
 import Link from "next/link"
 import { api, getResults } from "@/lib/api-client"
 
@@ -128,16 +122,27 @@ function QuickAction({ icon: Icon, label, href }: { icon: React.ElementType; lab
 }
 
 export default function DashboardPage() {
-  const [statsData, setStatsData] = useState({ totalStudents: 0, totalTeachers: 0, totalClasses: 0, totalRevenue: 0, pendingFees: 0 })
+  const [statsData, setStatsData] = useState({ totalStudents: 0, totalTeachers: 0, totalClasses: 0, totalRevenue: 0, pendingFees: 0, attendanceRate: 0 })
   const [recentStudents, setRecentStudents] = useState<any[]>([])
   const [recentPayments, setRecentPayments] = useState<any[]>([])
   const [notifications, setNotifications] = useState<any[]>([])
+  const [enrollmentData, setEnrollmentData] = useState<any[]>([])
+  const [revenueData, setRevenueData] = useState<any[]>([])
+  const [performanceData, setPerformanceData] = useState<any[]>([])
+  const [attendanceData, setAttendanceData] = useState<any[]>([])
 
   useEffect(() => {
     api.get("/api/dashboard/stats/").then(r => setStatsData(r.data)).catch(() => {})
     api.get("/api/students/?page_size=5").then(r => setRecentStudents(getResults(r.data))).catch(() => {})
     api.get("/api/fees/payments/?page_size=5").then(r => setRecentPayments(getResults(r.data))).catch(() => {})
     api.get("/api/notifications/?page_size=5").then(r => setNotifications(getResults(r.data))).catch(() => {})
+    api.get("/api/reports/charts/").then(r => {
+      const d = r.data
+      setEnrollmentData(d.enrollmentData || [])
+      setRevenueData(d.revenueData || [])
+      setPerformanceData(d.performanceData || [])
+      setAttendanceData(d.attendanceData || [])
+    }).catch(() => {})
   }, [])
 
   return (
@@ -171,7 +176,7 @@ export default function DashboardPage() {
           />
           <StatCard
             title="Attendance Rate"
-            value="94.2%"
+            value={`${statsData.attendanceRate}%`}
             change="-1.3%"
             changeType="down"
             icon={Clock}
