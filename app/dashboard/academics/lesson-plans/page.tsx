@@ -103,7 +103,7 @@ function LessonPlanDetailDialog({ plan }: { plan: any }) {
         <div className="flex flex-col gap-2">
           <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Resources & Materials</span>
           <div className="flex flex-wrap gap-2">
-            {plan.resources.split(", ").map((resource) => (
+            {String(plan.resources || "").split(", ").map((resource: string) => (
               <Badge key={resource} variant="secondary" className="text-xs">{resource}</Badge>
             ))}
           </div>

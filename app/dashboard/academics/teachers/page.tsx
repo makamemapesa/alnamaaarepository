@@ -69,7 +69,7 @@ function TeacherDetailDialog({ teacher }: { teacher: any }) {
         <div className="flex items-center gap-4">
           <Avatar className="h-14 w-14">
             <AvatarFallback className="bg-primary/10 text-primary text-lg font-bold">
-              {teacher.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+              {String(teacher.name || "").split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
             </AvatarFallback>
           </Avatar>
           <div>
@@ -427,7 +427,7 @@ export default function TeachersPage() {
                         <div className="flex items-center gap-3">
                           <Avatar className="h-9 w-9">
                             <AvatarFallback className="bg-primary/10 text-primary text-xs font-medium">
-                              {teacher.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                              {String(teacher.name || "").split(" ").map((n: string) => n[0]).join("").slice(0, 2)}
                             </AvatarFallback>
                           </Avatar>
                           <div>
